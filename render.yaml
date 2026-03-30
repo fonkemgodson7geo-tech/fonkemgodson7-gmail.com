@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: awcd
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health.php
+    envVars:
+      - key: DB_TYPE
+        value: sqlite
+      - key: DB_FILE
+        value: /app/data/clinic.db
+      - key: SITE_NAME
+        value: CENTRE MÉDICAL DONS DE SOINS
+      - key: PAYMENT_NUMBER
+        value: "681629394"
+      - key: CUSTOMER_SERVICE_NUMBER
+        value: "+237678612733"
+      - key: ENCRYPTION_KEY
+        generateValue: true

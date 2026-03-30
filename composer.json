@@ -1,0 +1,19 @@
+{
+    "name": "dondesoin/clinic-management",
+    "description": "Clinic Management System for CENTRE MÉMICAL DONS DE SOINS",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "^2.0",
+        "cinetpay/cinetpay-php-sdk": "^1.0",
+        "phpmailer/phpmailer": "^6.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Clinic\\": "src/"
+        }
+    },
+    "config": {
+        "disable-tls": true
+    }
+}
