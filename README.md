@@ -55,6 +55,22 @@ Use this checklist for every release to reduce deployment risk.
 - Validate in `dev`, then merge/rebase to `main` for production.
 - Tag releases after successful production verification.
 
+## Branding Setup (Logo)
+
+The landing page top bar supports a configurable logo via environment variable.
+
+1. Set `SITE_LOGO_URL` in your production `.env`.
+2. Use either an absolute URL (`https://.../logo.png`) or a project-relative path (`assets/img/logo.png`).
+3. Redeploy or restart PHP so environment changes are loaded.
+
+Example:
+
+```env
+SITE_LOGO_URL=https://your-domain.com/assets/logo.png
+```
+
+If `SITE_LOGO_URL` is empty, the UI shows a built-in `LOGO` placeholder box.
+
 ## How To Cut A Release
 
 Run these commands in order.
