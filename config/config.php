@@ -19,7 +19,7 @@ if (is_readable($_envFile)) {
 define('SITE_NAME',               getenv('SITE_NAME')               ?: 'CENTRE MÉMICAL DONS DE SOINS');
 define('PAYMENT_NUMBER',          getenv('PAYMENT_NUMBER')          ?: '681629394');
 define('CUSTOMER_SERVICE_NUMBER', getenv('CUSTOMER_SERVICE_NUMBER') ?: '+237678612733');
-define('SITE_LOGO_URL',           getenv('SITE_LOGO_URL')           ?: '');
+define('SITE_LOGO_URL',           getenv('SITE_LOGO_URL')           ?: 'assets/logo-default.svg');
 
 // ── Database Configuration ──────────────────────────────────────────────────
 define('DB_TYPE', getenv('DB_TYPE') ?: 'sqlite');

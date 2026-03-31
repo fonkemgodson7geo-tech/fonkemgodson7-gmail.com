@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Default Clinic Logo</title>
+  <desc id="desc">Shield and cross icon used as the default site logo.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00d49f"/>
+      <stop offset="100%" stop-color="#1f8fff"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="232" height="232" rx="56" fill="url(#bg)"/>
+  <path d="M128 56c34 0 62 9 62 9v58c0 46-29 74-62 91-33-17-62-45-62-91V65s28-9 62-9z" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="116" y="86" width="24" height="84" rx="8" fill="#ffffff"/>
+  <rect x="86" y="116" width="84" height="24" rx="8" fill="#ffffff"/>
+</svg>
