@@ -22,7 +22,15 @@ define('CUSTOMER_SERVICE_NUMBER', getenv('CUSTOMER_SERVICE_NUMBER') ?: '+2376786
 
 // ── Database Configuration ──────────────────────────────────────────────────
 define('DB_TYPE', getenv('DB_TYPE') ?: 'sqlite');
-define('DB_FILE', getenv('DB_FILE') ?: __DIR__ . '/../database/clinic.db');
+$_dbFile = getenv('DB_FILE') ?: (__DIR__ . '/../database/clinic.db');
+if (DB_TYPE === 'sqlite') {
+    // Ensure relative DB paths from env resolve from the project root.
+    if (!preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\/])/', $_dbFile)) {
+        $_dbFile = realpath(__DIR__ . '/..') . DIRECTORY_SEPARATOR . str_replace(['/', '\\\\'], DIRECTORY_SEPARATOR, $_dbFile);
+    }
+}
+define('DB_FILE', $_dbFile);
+unset($_dbFile);
 
 // Legacy MySQL constants (used only when DB_TYPE=mysql)
 define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
