@@ -20,7 +20,11 @@ $response = [
 ];
 
 try {
-    $pdo = new PDO('sqlite:' . DB_FILE);
+    if (defined('DB_TYPE') && DB_TYPE === 'mysql') {
+        $pdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+    } else {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+    }
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->query('SELECT 1');
 
