@@ -31,9 +31,9 @@ define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
 define('DB_PASS', getenv('DB_PASS') ?: (getenv('MYSQLPASSWORD') ?: ''));
 
 // ── Security ────────────────────────────────────────────────────────────────
-// Set via .env in production:  ENCRYPTION_KEY=<64-char hex>
-define('ENCRYPTION_KEY', getenv('ENCRYPTION_KEY')
-    ?: 'f3842c519f5518ccd5474d1b60189c2fa5224f270e26098a989c898f0ce406fd');
+// REQUIRED: Set ENCRYPTION_KEY in your .env file (64-char hex string).
+// Generate one with: php -r "echo bin2hex(random_bytes(32));"
+define('ENCRYPTION_KEY', getenv('ENCRYPTION_KEY') ?: '');
 
 // ── Third-party API Keys (override via .env in production) ──────────────────
 define('CINERPAY_API_KEY', getenv('CINERPAY_API_KEY') ?: '');

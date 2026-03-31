@@ -1,0 +1,38 @@
+# === Environment & Secrets ===
+.env
+.env.*
+!.env.example
+
+# === PHP ===
+vendor/
+composer.lock
+
+# === Database ===
+database/*.db
+database/*.sqlite
+*.db
+*.sqlite
+
+# === Uploads (user content) ===
+uploads/*
+!uploads/.gitkeep
+
+# === Logs ===
+*.log
+logs/
+
+# === Debug & setup scripts (not for production) ===
+debug_sql.php
+check_db.php
+setup_database.php
+setup_sqlite.php
+
+# === OS & editor files ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# === Build artifacts ===
+*.zip
+*.tar.gz
