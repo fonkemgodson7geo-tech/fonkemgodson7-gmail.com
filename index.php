@@ -1,4 +1,7 @@
-<?php require_once 'config/config.php'; ?>
+<?php
+require_once 'config/config.php';
+$siteLogoUrl = trim((string)SITE_LOGO_URL);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +37,34 @@
         .topbar {
             display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem;
             align-items: center; margin-bottom: 2rem; animation: reveal 700ms ease-out;
+        }
+        .brand-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--surface-border);
+            background: rgba(255,255,255,0.08);
+            object-fit: cover;
+            display: block;
+        }
+        .brand-logo-fallback {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--surface-border);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            background: rgba(255,255,255,0.08);
         }
         .brand { font-family: 'Fraunces', serif; font-size: 1.25rem; }
         .status-pill {
@@ -135,7 +166,18 @@
 
     <!-- Top bar -->
     <header class="topbar">
-        <div class="brand"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="brand-wrap">
+            <?php if ($siteLogoUrl !== ''): ?>
+                <img
+                    src="<?php echo htmlspecialchars($siteLogoUrl, ENT_QUOTES, 'UTF-8'); ?>"
+                    alt="<?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> logo"
+                    class="brand-logo"
+                >
+            <?php else: ?>
+                <span class="brand-logo-fallback" aria-hidden="true">LOGO</span>
+            <?php endif; ?>
+            <div class="brand"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?></div>
+        </div>
         <div class="status-pill" id="statusPill" role="status" aria-live="polite">
             <span class="dot" id="statusDot"></span>
             <span id="statusText">Checking live service status&hellip;</span>
