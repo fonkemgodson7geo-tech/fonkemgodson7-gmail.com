@@ -19,7 +19,23 @@ if (is_readable($_envFile)) {
 define('SITE_NAME',               getenv('SITE_NAME')               ?: 'CENTRE MÉMICAL DONS DE SOINS');
 define('PAYMENT_NUMBER',          getenv('PAYMENT_NUMBER')          ?: '681629394');
 define('CUSTOMER_SERVICE_NUMBER', getenv('CUSTOMER_SERVICE_NUMBER') ?: '+237678612733');
-define('SITE_LOGO_URL',           getenv('SITE_LOGO_URL')           ?: 'assets/logo-default.svg');
+$siteLogoFromEnv = trim((string)(getenv('SITE_LOGO_URL') ?: ''));
+if ($siteLogoFromEnv === '') {
+    $customLogoPointer = __DIR__ . '/../uploads/site-logo.path';
+    if (is_readable($customLogoPointer)) {
+        $customLogoPath = trim((string)file_get_contents($customLogoPointer));
+        if ($customLogoPath !== '' && str_starts_with($customLogoPath, 'uploads/')) {
+            $customLogoAbsPath = __DIR__ . '/../' . $customLogoPath;
+            if (is_file($customLogoAbsPath)) {
+                $siteLogoFromEnv = $customLogoPath;
+            }
+        }
+        unset($customLogoPath, $customLogoAbsPath);
+    }
+    unset($customLogoPointer);
+}
+define('SITE_LOGO_URL', $siteLogoFromEnv !== '' ? $siteLogoFromEnv : 'assets/logo-default.svg');
+unset($siteLogoFromEnv);
 
 // ── Database Configuration ──────────────────────────────────────────────────
 define('DB_TYPE', getenv('DB_TYPE') ?: 'sqlite');

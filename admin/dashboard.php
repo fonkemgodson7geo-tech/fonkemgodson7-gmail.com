@@ -206,6 +206,9 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="attendance.php">
                         <i class="bi bi-calendar-check"></i> Attendance
                     </a>
+                    <a class="nav-link" href="manage_logo.php">
+                        <i class="bi bi-image"></i> Branding
+                    </a>
                     <a class="nav-link" href="logout.php">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
