@@ -9,4 +9,5 @@ Disallow: /pharmacy/
 Disallow: /testing/
 Disallow: /compliance/
 
-# Submit https://<your-domain>/sitemap.php in search consoles.
+# Sitemap for search engines.
+Sitemap: https://awcd.onrender.com/sitemap.php

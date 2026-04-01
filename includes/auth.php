@@ -1,6 +1,11 @@
 <?php
 require_once '../config/config.php';
 
+// Prevent private authenticated pages from being indexed by search engines.
+if (!headers_sent()) {
+    header('X-Robots-Tag: noindex, nofollow, noarchive', true);
+}
+
 // Secure session configuration before session_start
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_samesite', 'Lax');
