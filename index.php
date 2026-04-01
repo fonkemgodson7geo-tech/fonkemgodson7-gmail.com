@@ -1,6 +1,10 @@
 <?php
 require_once 'config/config.php';
 $siteLogoUrl = trim((string)SITE_LOGO_URL);
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$baseUrl = SITE_URL !== '' ? SITE_URL : ($host !== '' ? ($scheme . '://' . $host) : '');
+$canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,6 +12,13 @@ $siteLogoUrl = trim((string)SITE_LOGO_URL);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?php echo SITE_NAME; ?> — trusted care delivery engineered for global reliability. Patient, doctor and admin portals with live system health monitoring.">
+    <?php if ($canonicalUrl !== ''): ?>
+    <link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
+    <meta property="og:url" content="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
+    <?php endif; ?>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> | Connected Care Network">
+    <meta property="og:description" content="Trusted care platform for patients, doctors, and administrators.">
     <title><?php echo SITE_NAME; ?> | Connected Care Network</title>
     <style>
         :root {

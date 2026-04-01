@@ -17,6 +17,7 @@ if (is_readable($_envFile)) {
 
 // ── Site Configuration ──────────────────────────────────────────────────────
 define('SITE_NAME',               getenv('SITE_NAME')               ?: 'CENTRE MEDICAL DONS DE SOINS');
+define('SITE_URL',                rtrim((string)(getenv('SITE_URL') ?: ''), '/'));
 define('PAYMENT_NUMBER',          getenv('PAYMENT_NUMBER')          ?: '681629394');
 define('CUSTOMER_SERVICE_NUMBER', getenv('CUSTOMER_SERVICE_NUMBER') ?: '+237678612733');
 $siteLogoFromEnv = trim((string)(getenv('SITE_LOGO_URL') ?: ''));

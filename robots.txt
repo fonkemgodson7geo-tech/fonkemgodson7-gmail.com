@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Keep private portals out of broad indexing.
+Disallow: /admin/
+Disallow: /doctor/
+Disallow: /patient/
+Disallow: /pharmacy/
+Disallow: /testing/
+Disallow: /compliance/
+
+# Submit https://<your-domain>/sitemap.php in search consoles.
