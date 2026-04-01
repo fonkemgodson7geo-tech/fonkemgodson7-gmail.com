@@ -101,6 +101,50 @@ git checkout dev
 
 If merge conflicts occur, resolve them, run smoke tests again, then continue and push.
 
+## Search Visibility Checklist (Google, Bing, Others)
+
+Use this after each production deployment so the site is discoverable.
+
+### 1. Public URL And Domain
+
+- Confirm the site is reachable from the public internet (no auth wall on home page).
+- Set `SITE_URL` in production to your canonical domain (for example, `https://awcd.onrender.com` or your custom domain).
+- If using a custom domain, configure DNS records in your registrar and verify HTTPS is active.
+
+### 2. Crawl And Sitemap
+
+- Confirm `robots.txt` is live at `/robots.txt`.
+- Confirm sitemap endpoint is live at `/sitemap.php`.
+- Keep private portals non-indexed (already disallowed in `robots.txt`).
+
+### 3. Search Console Setup
+
+- Add your domain in Google Search Console.
+- Verify ownership (usually DNS TXT record).
+- Submit sitemap URL: `https://your-domain/sitemap.php`.
+- Request indexing for the homepage and key public pages.
+
+### 4. Bing And Other Engines
+
+- Add the site to Bing Webmaster Tools.
+- Submit the same sitemap URL there.
+- Ensure site metadata (title and description) remains accurate after each release.
+
+### 5. Quick Verification Commands
+
+```bash
+# Health
+curl -s https://your-domain/api/health.php
+
+# Robots
+curl -I https://your-domain/robots.txt
+
+# Sitemap
+curl -I https://your-domain/sitemap.php
+```
+
+Expected result: HTTP `200` for all three endpoints, and valid XML on sitemap output.
+
 ## Release Log Template
 
 Copy this block for each release.
