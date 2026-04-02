@@ -208,16 +208,21 @@ try {
                                             <br><small class="text-muted"><?php echo ucfirst($log['role']); ?></small>
                                         </td>
                                         <td>
-                                            <span class="badge bg-<?php 
-                                                echo match($log['action_type']) {
-                                                    'create' => 'success',
-                                                    'update' => 'primary',
-                                                    'delete' => 'danger',
-                                                    'login' => 'info',
-                                                    'logout' => 'secondary',
-                                                    default => 'secondary'
-                                                };
-                                            ?>">
+                                            <?php
+                                            $badgeClass = 'secondary';
+                                            if ($log['action_type'] === 'create') {
+                                                $badgeClass = 'success';
+                                            } elseif ($log['action_type'] === 'update') {
+                                                $badgeClass = 'primary';
+                                            } elseif ($log['action_type'] === 'delete') {
+                                                $badgeClass = 'danger';
+                                            } elseif ($log['action_type'] === 'login') {
+                                                $badgeClass = 'info';
+                                            } elseif ($log['action_type'] === 'logout') {
+                                                $badgeClass = 'secondary';
+                                            }
+                                            ?>
+                                            <span class="badge bg-<?php echo $badgeClass; ?>">
                                                 <?php echo ucfirst($log['action_type']); ?>
                                             </span>
                                         </td>

@@ -137,13 +137,16 @@ $user = $_SESSION['user'];
                                 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 
                                 foreach ($logs as $log) {
-                                    $badgeClass = match($log['action_type']) {
-                                        'create' => 'success',
-                                        'update' => 'primary',
-                                        'delete' => 'danger',
-                                        'login' => 'info',
-                                        default => 'secondary'
-                                    };
+                                    $badgeClass = 'secondary';
+                                    if ($log['action_type'] === 'create') {
+                                        $badgeClass = 'success';
+                                    } elseif ($log['action_type'] === 'update') {
+                                        $badgeClass = 'primary';
+                                    } elseif ($log['action_type'] === 'delete') {
+                                        $badgeClass = 'danger';
+                                    } elseif ($log['action_type'] === 'login') {
+                                        $badgeClass = 'info';
+                                    }
                                     
                                     echo "<div class='list-group-item'>";
                                     echo "<div class='d-flex w-100 justify-content-between'>";
@@ -184,13 +187,16 @@ $user = $_SESSION['user'];
                                 $issues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 
                                 foreach ($issues as $issue) {
-                                    $severityClass = match($issue['severity']) {
-                                        'critical' => 'danger',
-                                        'high' => 'warning',
-                                        'medium' => 'info',
-                                        'low' => 'secondary',
-                                        default => 'secondary'
-                                    };
+                                    $severityClass = 'secondary';
+                                    if ($issue['severity'] === 'critical') {
+                                        $severityClass = 'danger';
+                                    } elseif ($issue['severity'] === 'high') {
+                                        $severityClass = 'warning';
+                                    } elseif ($issue['severity'] === 'medium') {
+                                        $severityClass = 'info';
+                                    } elseif ($issue['severity'] === 'low') {
+                                        $severityClass = 'secondary';
+                                    }
                                     
                                     echo "<div class='list-group-item'>";
                                     echo "<div class='d-flex w-100 justify-content-between'>";
@@ -243,20 +249,25 @@ $user = $_SESSION['user'];
                             $requirements = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             
                             foreach ($requirements as $req) {
-                                $statusClass = match($req['status']) {
-                                    'completed' => 'success',
-                                    'in_progress' => 'warning',
-                                    'pending' => 'secondary',
-                                    'overdue' => 'danger',
-                                    default => 'secondary'
-                                };
+                                $statusClass = 'secondary';
+                                if ($req['status'] === 'completed') {
+                                    $statusClass = 'success';
+                                } elseif ($req['status'] === 'in_progress') {
+                                    $statusClass = 'warning';
+                                } elseif ($req['status'] === 'pending') {
+                                    $statusClass = 'secondary';
+                                } elseif ($req['status'] === 'overdue') {
+                                    $statusClass = 'danger';
+                                }
                                 
-                                $priorityClass = match($req['priority']) {
-                                    'high' => 'danger',
-                                    'medium' => 'warning',
-                                    'low' => 'info',
-                                    default => 'secondary'
-                                };
+                                $priorityClass = 'secondary';
+                                if ($req['priority'] === 'high') {
+                                    $priorityClass = 'danger';
+                                } elseif ($req['priority'] === 'medium') {
+                                    $priorityClass = 'warning';
+                                } elseif ($req['priority'] === 'low') {
+                                    $priorityClass = 'info';
+                                }
                                 
                                 echo "<tr>";
                                 echo "<td>" . htmlspecialchars($req['requirement_name']) . "</td>";

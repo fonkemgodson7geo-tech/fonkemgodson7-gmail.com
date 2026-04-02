@@ -341,14 +341,17 @@ function runAutomatedTest($testType) {
                                             <td><?php echo htmlspecialchars($test['test_name']); ?></td>
                                             <td><?php echo ucfirst($test['test_type']); ?></td>
                                             <td>
-                                                <span class="badge bg-<?php 
-                                                    echo match($test['status']) {
-                                                        'passed' => 'success',
-                                                        'failed' => 'danger',
-                                                        'warning' => 'warning',
-                                                        default => 'secondary'
-                                                    };
-                                                ?>">
+                                                <?php
+                                                $badgeClass = 'secondary';
+                                                if ($test['status'] === 'passed') {
+                                                    $badgeClass = 'success';
+                                                } elseif ($test['status'] === 'failed') {
+                                                    $badgeClass = 'danger';
+                                                } elseif ($test['status'] === 'warning') {
+                                                    $badgeClass = 'warning';
+                                                }
+                                                ?>
+                                                <span class="badge bg-<?php echo $badgeClass; ?>">
                                                     <?php echo ucfirst($test['status']); ?>
                                                 </span>
                                             </td>
@@ -422,15 +425,19 @@ function runAutomatedTest($testType) {
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1"><?php echo htmlspecialchars($case['title']); ?></h6>
                                         <small>
-                                            <span class="badge bg-<?php 
-                                                echo match($case['priority']) {
-                                                    'low' => 'secondary',
-                                                    'medium' => 'info',
-                                                    'high' => 'warning',
-                                                    'critical' => 'danger',
-                                                    default => 'secondary'
-                                                };
-                                            ?>">
+                                            <?php
+                                            $priorityClass = 'secondary';
+                                            if ($case['priority'] === 'low') {
+                                                $priorityClass = 'secondary';
+                                            } elseif ($case['priority'] === 'medium') {
+                                                $priorityClass = 'info';
+                                            } elseif ($case['priority'] === 'high') {
+                                                $priorityClass = 'warning';
+                                            } elseif ($case['priority'] === 'critical') {
+                                                $priorityClass = 'danger';
+                                            }
+                                            ?>
+                                            <span class="badge bg-<?php echo $priorityClass; ?>">
                                                 <?php echo ucfirst($case['priority']); ?>
                                             </span>
                                         </small>

@@ -1,4 +1,4 @@
-﻿ Code Citations
+﻿# Code Citations
 
 Last updated: 2026-03-30
 
@@ -7,9 +7,10 @@ This report was refreshed after rewriting the previously flagged authentication 
 ## Verification Summary
 
 A local workspace re-scan found no remaining matches for the previously flagged high-similarity snippets:
-- <form method="post"> login/register block pattern from earlier report
-- <button type="submit" class="btn btn-primary">Login</button>
-- <button type="submit" class="btn btn-primary">Register</button>
+
+- form method="post" login/register block pattern from earlier report
+- button type="submit" class="btn btn-primary" Login button pattern
+- button type="submit" class="btn btn-primary" Register button pattern
 
 ## Updated Files
 
