@@ -56,6 +56,7 @@ try {
         <a class="navbar-brand" href="dashboard.php"><i class="bi bi-briefcase"></i> Staff Portal</a>
         <div class="navbar-nav ms-auto">
             <a class="nav-link active" href="dashboard.php">Dashboard</a>
+            <a class="nav-link" href="../pharmacy/dashboard.php">Pharmacy</a>
             <a class="nav-link" href="../public_communications.php">Communications</a>
             <a class="nav-link" href="logout.php">Logout</a>
         </div>
@@ -164,6 +165,7 @@ try {
     <div class="card shadow-sm mt-3">
         <div class="card-header"><strong>Quick Actions</strong></div>
         <div class="card-body d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="../pharmacy/dashboard.php"><i class="bi bi-capsule"></i> Open Pharmacy</a>
             <a class="btn btn-outline-info" href="../public_communications.php"><i class="bi bi-megaphone"></i> Post Communication</a>
             <a class="btn btn-outline-primary" href="../patient/appointments.php"><i class="bi bi-calendar-event"></i> View Patient Appointments</a>
             <a class="btn btn-outline-success" href="../reports/dashboard.php"><i class="bi bi-graph-up"></i> Reports Overview</a>

@@ -271,6 +271,9 @@ try {
                     <a class="nav-link" href="patients.php">
                         <i class="bi bi-people"></i> My Patients
                     </a>
+                    <a class="nav-link" href="../pharmacy/dashboard.php">
+                        <i class="bi bi-capsule-pill"></i> Pharmacy
+                    </a>
                     <a class="nav-link" href="consultations.php">
                         <i class="bi bi-chat-text"></i> Consultations
                     </a>

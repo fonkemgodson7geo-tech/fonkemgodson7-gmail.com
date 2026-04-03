@@ -218,6 +218,9 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="manage_pages.php">
                         <i class="bi bi-file-earmark-plus"></i> Pages
                     </a>
+                    <a class="nav-link" href="../pharmacy/dashboard.php">
+                        <i class="bi bi-capsule-pill"></i> Pharmacy
+                    </a>
                     <a class="nav-link" href="logout.php">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>

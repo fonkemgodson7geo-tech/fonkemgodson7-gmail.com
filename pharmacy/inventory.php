@@ -4,7 +4,7 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'pharmacist'])) {
+if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'staff'])) {
     header('Location: ../index.php');
     exit;
 }
@@ -12,15 +12,18 @@ if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'pharmacist'])) {
 $message = '';
 
 if (isset($_POST['update_stock'])) {
+    verifyCsrf();
+
     $id = $_POST['id'];
     $quantity = $_POST['quantity'];
     
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = ?, updated_at = NOW() WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmt->execute([$quantity, $id]);
         $message = 'Stock updated successfully';
     } catch (PDOException $e) {
+        error_log('Pharmacy inventory update stock error: ' . $e->getMessage());
         $message = 'Error updating stock';
     }
 }
@@ -51,7 +54,7 @@ if (isset($_POST['update_stock'])) {
         <h2>Inventory Management</h2>
         
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo $message; ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <div class="card">
@@ -106,7 +109,8 @@ if (isset($_POST['update_stock'])) {
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='7'>Database error: " . $e->getMessage() . "</td></tr>";
+                            error_log('Pharmacy inventory list error: ' . $e->getMessage());
+                            echo "<tr><td colspan='7'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -124,6 +128,7 @@ if (isset($_POST['update_stock'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="post">
+                    <?php echo csrfField(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="id" id="update_id">
                         <div class="mb-3">

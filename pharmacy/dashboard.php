@@ -4,7 +4,7 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'pharmacist'])) {
+if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'staff'])) {
     header('Location: ../index.php');
     exit;
 }
@@ -14,6 +14,8 @@ $user = $_SESSION['user'];
 $message = '';
 
 if (isset($_POST['add_medication'])) {
+    verifyCsrf();
+
     $medication_name = $_POST['medication_name'];
     $quantity = $_POST['quantity'];
     $unit_price = $_POST['unit_price'];
@@ -26,7 +28,8 @@ if (isset($_POST['add_medication'])) {
         $stmt->execute([$medication_name, $quantity, $unit_price, $expiry_date, $min_stock]);
         $message = 'Medication added successfully';
     } catch (PDOException $e) {
-        $message = 'Error adding medication: ' . $e->getMessage();
+        error_log('Pharmacy dashboard add medication error: ' . $e->getMessage());
+        $message = 'Error adding medication. Please try again.';
     }
 }
 ?>
@@ -56,7 +59,7 @@ if (isset($_POST['add_medication'])) {
         <h2>Pharmacy Management Dashboard</h2>
         
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo $message; ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <div class="row">
@@ -99,7 +102,11 @@ if (isset($_POST['add_medication'])) {
                         <h3><?php
                             try {
                                 $pdo = getDB();
-                                $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+30 day')");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                                }
                                 $stmt->execute();
                                 echo $stmt->fetchColumn();
                             } catch (PDOException $e) {
@@ -116,7 +123,11 @@ if (isset($_POST['add_medication'])) {
                         <h3><?php
                             try {
                                 $pdo = getDB();
-                                $stmt = $pdo->prepare("SELECT COUNT(*) FROM prescriptions_fulfilled WHERE DATE(dispensed_at) = CURDATE()");
+                                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM prescriptions_fulfilled WHERE date(dispensed_at) = date('now')");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM prescriptions_fulfilled WHERE DATE(dispensed_at) = CURDATE()");
+                                }
                                 $stmt->execute();
                                 echo $stmt->fetchColumn();
                             } catch (PDOException $e) {
@@ -135,6 +146,7 @@ if (isset($_POST['add_medication'])) {
             </div>
             <div class="card-body">
                 <form method="post">
+                    <?php echo csrfField(); ?>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

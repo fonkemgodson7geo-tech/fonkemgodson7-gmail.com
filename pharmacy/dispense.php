@@ -4,7 +4,7 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'pharmacist'])) {
+if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'staff'])) {
     header('Location: ../index.php');
     exit;
 }
@@ -15,6 +15,8 @@ $user_id = $user['id'];
 $message = '';
 
 if (isset($_POST['dispense_medication'])) {
+    verifyCsrf();
+
     $prescription_id = $_POST['prescription_id'];
     $inventory_id = $_POST['inventory_id'];
     $quantity = $_POST['quantity'];
@@ -42,7 +44,8 @@ if (isset($_POST['dispense_medication'])) {
             $message = 'Insufficient stock available';
         }
     } catch (PDOException $e) {
-        $message = 'Error dispensing medication: ' . $e->getMessage();
+        error_log('Pharmacy dispense medication error: ' . $e->getMessage());
+        $message = 'Error dispensing medication. Please try again.';
     }
 }
 ?>
@@ -72,7 +75,7 @@ if (isset($_POST['dispense_medication'])) {
         <h2>Dispense Medication</h2>
         
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo $message; ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <!-- Pending Prescriptions -->
@@ -120,7 +123,8 @@ if (isset($_POST['dispense_medication'])) {
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='6'>Database error: " . $e->getMessage() . "</td></tr>";
+                            error_log('Pharmacy dispense pending prescriptions error: ' . $e->getMessage());
+                            echo "<tr><td colspan='6'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -138,6 +142,7 @@ if (isset($_POST['dispense_medication'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="post">
+                    <?php echo csrfField(); ?>
                     <div class="modal-body">
                         <input type="hidden" name="prescription_id" id="dispense_prescription_id">
                         <p><strong>Medication:</strong> <span id="dispense_medication"></span></p>
