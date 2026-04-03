@@ -9,7 +9,12 @@ $step = (int)($_SESSION['accreditation_step'] ?? 1);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     verifyCsrf();
-    if (isset($_POST['captcha'])) {
+    if (isset($_POST['restart'])) {
+        $_SESSION['accreditation_step'] = 1;
+        unset($_SESSION['accreditation_contact']);
+        $step = 1;
+        $message = 'Accreditation flow restarted.';
+    } elseif (isset($_POST['captcha'])) {
         // Simple math CAPTCHA
         $num1 = (int)($_POST['num1'] ?? 0);
         $num2 = (int)($_POST['num2'] ?? 0);
@@ -159,6 +164,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <p>Access granted. You can now view accredited content.</p>
                             <a href="accreditation_content.php" class="btn btn-success">View Content</a>
                         <?php endif; ?>
+
+                        <hr>
+                        <h5>Accreditation Summary</h5>
+                        <p class="mb-2">This page confirms our healthcare quality and compliance standards:</p>
+                        <ul>
+                            <li>Certified clinical staff and licensed practitioners.</li>
+                            <li>Secure data handling and privacy-oriented workflows.</li>
+                            <li>Audit-ready records and compliance dashboards.</li>
+                            <li>Documented emergency and patient safety procedures.</li>
+                        </ul>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="accreditation_content.php" class="btn btn-outline-success">Open Accreditation Content</a>
+                            <form method="post" class="d-inline">
+                                <?php echo csrfField(); ?>
+                                <button type="submit" name="restart" class="btn btn-outline-secondary">Restart Verification</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

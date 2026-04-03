@@ -218,6 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="login-footer">
                 <i class="bi bi-house-door"></i>
+                <a href="register.php">Create doctor account</a> &middot;
                 <a href="../index.php">Back to home</a>
             </div>
         </div>

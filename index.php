@@ -1,5 +1,88 @@
 <?php
 require_once 'config/config.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+function homeCsrfToken(): string {
+    if (empty($_SESSION['home_csrf_token'])) {
+        $_SESSION['home_csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return (string)$_SESSION['home_csrf_token'];
+}
+
+function homeCsrfField(): string {
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(homeCsrfToken(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
+function verifyHomeCsrf(): bool {
+    $submitted = (string)($_POST['csrf_token'] ?? '');
+    return $submitted !== '' && hash_equals(homeCsrfToken(), $submitted);
+}
+
+$uploadMessage = '';
+$uploadError = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_home_file'])) {
+    if (!verifyHomeCsrf()) {
+        $uploadError = 'Request validation failed. Please try again.';
+    } else {
+
+        if (!isset($_FILES['home_file']) || !is_array($_FILES['home_file'])) {
+            $uploadError = 'Please choose a file to upload.';
+        } else {
+            $file = $_FILES['home_file'];
+            $maxBytes = 5 * 1024 * 1024;
+            $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt'];
+            $uploadDir = __DIR__ . '/uploads/home_uploads';
+
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                $uploadError = 'Upload failed. Please try again.';
+            } elseif (($file['size'] ?? 0) <= 0 || (int)$file['size'] > $maxBytes) {
+                $uploadError = 'File must be between 1 byte and 5 MB.';
+            } else {
+                $originalName = (string)($file['name'] ?? '');
+                $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowedExt, true)) {
+                    $uploadError = 'Unsupported file type.';
+                } else {
+                    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                        $uploadError = 'Upload folder is not writable.';
+                    } else {
+                        $safeBase = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+                        $filename = date('YmdHis') . '_' . substr(bin2hex(random_bytes(4)), 0, 8) . '_' . $safeBase . '.' . $ext;
+                        $target = $uploadDir . '/' . $filename;
+
+                        if (!move_uploaded_file((string)$file['tmp_name'], $target)) {
+                            $uploadError = 'Could not save uploaded file.';
+                        } else {
+                            $uploadMessage = 'File uploaded successfully: ' . $filename;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+$recentUploads = [];
+$publicUploadDir = __DIR__ . '/uploads/home_uploads';
+if (is_dir($publicUploadDir)) {
+    $entries = scandir($publicUploadDir) ?: [];
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        $full = $publicUploadDir . '/' . $entry;
+        if (is_file($full)) {
+            $recentUploads[] = ['name' => $entry, 'mtime' => (int)filemtime($full)];
+        }
+    }
+    usort($recentUploads, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+    $recentUploads = array_slice($recentUploads, 0, 6);
+}
+
 $siteLogoUrl = trim((string)SITE_LOGO_URL);
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? '';
@@ -455,6 +538,43 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             border: 1px solid var(--line);
         }
 
+        .upload-panel {
+            margin-top: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.88);
+            padding: 1rem;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 0.9rem;
+        }
+
+        .upload-grid .cardish {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            padding: 0.9rem;
+        }
+
+        .upload-note {
+            color: var(--ink-1);
+            font-size: 0.9rem;
+        }
+
+        .upload-list {
+            margin: 0;
+            padding-left: 1rem;
+        }
+
+        .upload-list li {
+            margin-bottom: 0.3rem;
+            color: var(--ink-1);
+            font-size: 0.9rem;
+        }
+
         .foot {
             margin-top: 1.1rem;
             color: var(--ink-1);
@@ -487,6 +607,10 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
 
             .portal-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .upload-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -527,6 +651,8 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
         <nav class="topnav" aria-label="Quick links">
             <a class="chip-link" href="#portal">Sign In</a>
             <a class="chip-link" href="patient/register.php">Register Patient</a>
+            <a class="chip-link" href="doctor/register.php">Register Doctor</a>
+            <a class="chip-link" href="staff/register.php">Register Staff</a>
             <a class="chip-link" href="public_communications.php">Communications</a>
             <a class="chip-link" href="accreditation.php">Accreditation</a>
         </nav>
@@ -596,6 +722,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                 <p>Consultations, shift attendance, and care updates.</p>
                 <div class="portal-actions">
                     <a class="mini-btn login" href="doctor/login.php">Doctor Sign In</a>
+                    <a class="mini-btn alt" href="doctor/register.php">Create Account</a>
                 </div>
             </article>
             <article class="portal-card">
@@ -603,6 +730,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                 <p>Operational workflows, reporting, and communications.</p>
                 <div class="portal-actions">
                     <a class="mini-btn login" href="staff/login.php">Staff Sign In</a>
+                    <a class="mini-btn alt" href="staff/register.php">Create Account</a>
                 </div>
             </article>
             <article class="portal-card">
@@ -610,6 +738,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                 <p>Guided access for internship and supervision tasks.</p>
                 <div class="portal-actions">
                     <a class="mini-btn login" href="intern/login.php">Intern Sign In</a>
+                    <a class="mini-btn alt" href="intern/register.php">Create Account</a>
                 </div>
             </article>
             <article class="portal-card">
@@ -617,6 +746,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                 <p>Shift activities and learning operations in one place.</p>
                 <div class="portal-actions">
                     <a class="mini-btn login" href="trainee/login.php">Trainee Sign In</a>
+                    <a class="mini-btn alt" href="trainee/register.php">Create Account</a>
                 </div>
             </article>
             <article class="portal-card">
@@ -627,6 +757,50 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                     <a class="mini-btn alt" href="accreditation.php">Accreditation</a>
                 </div>
             </article>
+        </div>
+    </section>
+
+    <section class="upload-panel" id="home-upload">
+        <div class="portal-head" style="margin-bottom:0.75rem;">
+            <h2>Upload Files and Images</h2>
+            <p>Share documents or media directly from the home page.</p>
+        </div>
+
+        <?php if ($uploadMessage): ?>
+            <div class="alert alert-success"><?php echo htmlspecialchars($uploadMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+        <?php if ($uploadError): ?>
+            <div class="alert alert-danger"><?php echo htmlspecialchars($uploadError, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+
+        <div class="upload-grid">
+            <div class="cardish">
+                <form method="post" enctype="multipart/form-data">
+                    <?php echo homeCsrfField(); ?>
+                    <div class="mb-2">
+                        <label for="home_file" class="form-label"><strong>Select File</strong></label>
+                        <input class="form-control" type="file" id="home_file" name="home_file" required>
+                    </div>
+                    <p class="upload-note">Allowed: JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, TXT. Max size: 5 MB.</p>
+                    <button class="btn btn-primary" type="submit" name="upload_home_file">Upload</button>
+                </form>
+            </div>
+            <div class="cardish">
+                <h3 style="margin-top:0;">Recent Uploads</h3>
+                <?php if (!$recentUploads): ?>
+                    <p class="upload-note">No files uploaded yet.</p>
+                <?php else: ?>
+                    <ul class="upload-list">
+                        <?php foreach ($recentUploads as $item): ?>
+                            <li>
+                                <a href="<?php echo htmlspecialchars('uploads/home_uploads/' . $item['name'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">
+                                    <?php echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
         </div>
     </section>
 

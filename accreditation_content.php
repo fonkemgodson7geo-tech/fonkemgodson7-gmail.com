@@ -1,5 +1,12 @@
 <?php
 require_once 'config/config.php';
+
+session_start();
+$hasAccess = ((int)($_SESSION['accreditation_step'] ?? 0) >= 4);
+if (!$hasAccess) {
+    header('Location: accreditation.php');
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -22,6 +29,8 @@ require_once 'config/config.php';
                 <li>State-of-the-art facilities</li>
                 <li>Patient privacy and security</li>
                 <li>24/7 emergency services</li>
+                <li>Structured quality assurance and internal audits</li>
+                <li>Traceable incident reporting and corrective actions</li>
             </ul>
         </div>
         <a href="index.php" class="btn btn-primary">Back to Home</a>

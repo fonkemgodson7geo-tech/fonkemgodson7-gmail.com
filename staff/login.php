@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <button class="btn btn-info text-white w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> Sign In</button>
             </form>
-            <p class="mt-3 mb-0 text-center"><a href="../index.php">Back to Home</a></p>
+            <p class="mt-3 mb-0 text-center"><a href="register.php">Create staff account</a> &middot; <a href="../index.php">Back to Home</a></p>
         </div>
     </div>
 </div>

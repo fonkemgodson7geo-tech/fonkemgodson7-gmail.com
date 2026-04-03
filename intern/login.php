@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3"><label class="form-label">Password</label><input class="form-control" type="password" name="password" required></div>
                 <button class="btn btn-primary w-100" type="submit">Sign In</button>
             </form>
-            <p class="mt-3 mb-0 text-center"><a href="../index.php">Back to Home</a></p>
+            <p class="mt-3 mb-0 text-center"><a href="register.php">Create intern account</a> &middot; <a href="../index.php">Back to Home</a></p>
         </div>
     </div>
 </div>

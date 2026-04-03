@@ -1,5 +1,5 @@
 <?php
-require_once '../config/config.php';
+require_once __DIR__ . '/../config/config.php';
 
 // Prevent private authenticated pages from being indexed by search engines.
 if (!headers_sent()) {
