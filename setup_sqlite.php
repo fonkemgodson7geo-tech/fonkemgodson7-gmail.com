@@ -24,20 +24,25 @@ try {
 
     $tableCount = 0;
     foreach ($statements as $statement) {
-        if (!empty($statement) && !preg_match('/^--/', $statement)) {
-            try {
-                $pdo->exec($statement);
-                if (stripos($statement, 'CREATE TABLE') !== false) {
-                    preg_match('/CREATE TABLE (\w+)/i', $statement, $matches);
-                    if (isset($matches[1])) {
-                        echo "✓ Created table: {$matches[1]}\n";
-                        $tableCount++;
-                    }
+        // Remove SQL single-line comments so comment-prefixed CREATE statements are not skipped.
+        $statement = preg_replace('/^\s*--.*$/m', '', $statement);
+        $statement = trim((string)$statement);
+        if ($statement === '') {
+            continue;
+        }
+
+        try {
+            $pdo->exec($statement);
+            if (stripos($statement, 'CREATE TABLE') !== false) {
+                preg_match('/CREATE TABLE\s+(\w+)/i', $statement, $matches);
+                if (isset($matches[1])) {
+                    echo "✓ Created table: {$matches[1]}\n";
+                    $tableCount++;
                 }
-            } catch (Exception $e) {
-                echo "⚠ Warning with statement: " . substr($statement, 0, 50) . "...\n";
-                echo "   Error: " . $e->getMessage() . "\n";
             }
+        } catch (Exception $e) {
+            echo "⚠ Warning with statement: " . substr($statement, 0, 50) . "...\n";
+            echo "   Error: " . $e->getMessage() . "\n";
         }
     }
 
