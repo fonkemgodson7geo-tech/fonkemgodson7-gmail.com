@@ -7,7 +7,7 @@ RUN apk add --no-cache --virtual .build-deps \
         make \
         pkgconf \
         sqlite-dev \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_sqlite pdo_mysql \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql \
     && apk del .build-deps
 
 WORKDIR /app
