@@ -68,6 +68,16 @@ define('SMTP_HOST',        getenv('SMTP_HOST')        ?: 'smtp.gmail.com');
 define('SMTP_USER',        getenv('SMTP_USER')        ?: '');
 define('SMTP_PASS',        getenv('SMTP_PASS')        ?: '');
 define('SMTP_PORT',        (int)(getenv('SMTP_PORT')  ?: 587));
+define('SMTP_SECURE',      getenv('SMTP_SECURE')      ?: 'tls');
+define('EMAIL_FROM_ADDRESS', getenv('EMAIL_FROM_ADDRESS') ?: SMTP_USER);
+define('EMAIL_FROM_NAME',  getenv('EMAIL_FROM_NAME')  ?: SITE_NAME);
+define('BREVO_API_KEY',    getenv('BREVO_API_KEY')    ?: '');
+define('TWILIO_ACCOUNT_SID', getenv('TWILIO_ACCOUNT_SID') ?: '');
+define('TWILIO_AUTH_TOKEN',  getenv('TWILIO_AUTH_TOKEN') ?: '');
+define('TWILIO_FROM_NUMBER', getenv('TWILIO_FROM_NUMBER') ?: '');
+define('TWILIO_VOICE_URL',   getenv('TWILIO_VOICE_URL') ?: '');
+define('PAYMENT_PINCODE',    getenv('PAYMENT_PINCODE') ?: '');
+define('PAYMENT_DEV_SHOW_CODE', getenv('PAYMENT_DEV_SHOW_CODE') ?: '1');
 
 // ── File uploads ────────────────────────────────────────────────────────────
 define('UPLOAD_DIR',    getenv('UPLOAD_DIR')    ?: __DIR__ . '/../uploads/');

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/realtime_gateway.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -11,12 +12,17 @@ $response = [
     'timezone' => 'UTC',
     'checks' => [
         'database' => 'down',
+        'sms_gateway' => 'down',
+        'email_gateway' => 'down',
+        'voice_gateway' => 'down',
+        'payment_gateway' => 'down',
     ],
     'supported_locales' => ['en', 'fr'],
     'security' => [
         'transport' => 'https-ready',
         'auth' => 'role-based',
     ],
+    'gateways' => rtGatewayStatus(),
 ];
 
 try {
@@ -30,6 +36,13 @@ try {
 
     $response['status'] = 'operational';
     $response['checks']['database'] = 'up';
+
+    $gatewayStatus = rtGatewayStatus();
+    $response['gateways'] = $gatewayStatus;
+    $response['checks']['sms_gateway'] = $gatewayStatus['sms'] === 'configured' ? 'up' : 'down';
+    $response['checks']['email_gateway'] = $gatewayStatus['email'] === 'configured' ? 'up' : 'down';
+    $response['checks']['voice_gateway'] = $gatewayStatus['voice'] === 'configured' ? 'up' : 'down';
+    $response['checks']['payment_gateway'] = $gatewayStatus['payments'] === 'configured' ? 'up' : 'down';
 } catch (Throwable $e) {
     error_log('Health check failure: ' . $e->getMessage());
 }

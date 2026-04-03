@@ -209,6 +209,15 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="manage_logo.php">
                         <i class="bi bi-image"></i> Branding
                     </a>
+                    <a class="nav-link" href="logs.php">
+                        <i class="bi bi-journal-text"></i> Logs
+                    </a>
+                    <a class="nav-link" href="realtime_gateway.php">
+                        <i class="bi bi-broadcast"></i> Realtime
+                    </a>
+                    <a class="nav-link" href="manage_pages.php">
+                        <i class="bi bi-file-earmark-plus"></i> Pages
+                    </a>
                     <a class="nav-link" href="logout.php">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>

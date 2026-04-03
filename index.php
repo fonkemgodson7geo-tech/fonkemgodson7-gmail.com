@@ -20,133 +20,449 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
     <meta property="og:title" content="<?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> | Connected Care Network">
     <meta property="og:description" content="Trusted care platform for patients, doctors, and administrators.">
     <title><?php echo SITE_NAME; ?> | Connected Care Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #08131f;
-            --bg-mid: #10253a;
-            --text: #ebf3ff;
-            --muted: #9db0c7;
-            --surface: rgba(255,255,255,0.07);
-            --surface-border: rgba(255,255,255,0.16);
-            --ok: #38d39f;
-            --warn: #ffcb66;
+            --bg-0: #f3f8fb;
+            --bg-1: #e7f1f7;
+            --ink-0: #152638;
+            --ink-1: #35546d;
+            --card: rgba(255, 255, 255, 0.8);
+            --card-strong: #ffffff;
+            --line: rgba(21, 38, 56, 0.12);
+            --teal: #0fb39d;
+            --teal-dark: #0a8b7b;
+            --amber: #ffb347;
+            --coral: #ff7f66;
+            --ok: #27bf8a;
+            --warn: #e1962f;
         }
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
         body {
-            margin: 0; min-height: 100vh;
-            font-family: 'Manrope', sans-serif;
-            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--ink-0);
             background:
-                radial-gradient(1200px 500px at 10% -10%, rgba(0,179,134,0.28), transparent 60%),
-                radial-gradient(900px 450px at 100% 0%, rgba(255,127,80,0.18), transparent 60%),
-                linear-gradient(160deg, var(--bg-deep), var(--bg-mid));
+                radial-gradient(900px 400px at 10% -5%, rgba(15, 179, 157, 0.2), transparent 60%),
+                radial-gradient(900px 400px at 95% 0%, rgba(255, 127, 102, 0.2), transparent 62%),
+                linear-gradient(180deg, var(--bg-0), var(--bg-1));
             background-attachment: fixed;
         }
-        .page { max-width: 1180px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
-        /* ── Top bar ── */
+        .page {
+            max-width: 1220px;
+            margin: 0 auto;
+            padding: 1.25rem 1rem 4rem;
+        }
+
         .topbar {
-            display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem;
-            align-items: center; margin-bottom: 2rem; animation: reveal 700ms ease-out;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 0.8rem;
+            align-items: center;
+            padding: 0.6rem 0;
+            margin-bottom: 1.3rem;
+            animation: rise 700ms ease-out;
         }
         .brand-wrap {
             display: inline-flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.7rem;
         }
         .brand-logo {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            border: 1px solid var(--surface-border);
-            background: rgba(255,255,255,0.08);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
             object-fit: cover;
             display: block;
         }
         .brand-logo-fallback {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            border: 1px solid var(--surface-border);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             font-weight: 800;
-            color: var(--muted);
+            color: var(--ink-1);
             letter-spacing: 0.08em;
-            background: rgba(255,255,255,0.08);
+            background: #fff;
         }
-        .brand { font-family: 'Fraunces', serif; font-size: 1.25rem; }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .topnav {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .chip-link {
+            text-decoration: none;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.75);
+            color: var(--ink-0);
+            border-radius: 999px;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.84rem;
+            font-weight: 600;
+            transition: all 180ms ease;
+        }
+
+        .chip-link:hover {
+            transform: translateY(-1px);
+            border-color: rgba(10, 139, 123, 0.35);
+            background: #fff;
+        }
+
         .status-pill {
-            display: inline-flex; align-items: center; gap: 0.45rem;
-            border: 1px solid var(--surface-border); border-radius: 999px;
-            padding: 0.35rem 0.85rem; background: var(--surface); font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 0.4rem 0.85rem;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.84rem;
+            color: var(--ink-1);
         }
+
         .dot {
-            width: 8px; height: 8px; border-radius: 999px; background: var(--warn);
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--warn);
             animation: pulse-warn 1.6s infinite;
         }
-        .dot.ok { background: var(--ok); animation: pulse-ok 1.6s infinite; }
 
-        /* ── Hero ── */
-        .hero {
-            border: 1px solid var(--surface-border); border-radius: 22px;
-            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-            padding: 2.2rem; box-shadow: 0 22px 60px rgba(0,0,0,0.25);
-            animation: reveal 950ms ease-out;
+        .dot.ok {
+            background: var(--ok);
+            animation: pulse-ok 1.6s infinite;
         }
-        .hero h1 {
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero-main,
+        .hero-side {
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: linear-gradient(155deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.78));
+            box-shadow: 0 20px 45px rgba(20, 45, 68, 0.11);
+            animation: rise 850ms ease-out;
+        }
+
+        .hero-main {
+            padding: 2.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-main::after {
+            content: '';
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(15, 179, 157, 0.17), rgba(15, 179, 157, 0));
+            right: -80px;
+            top: -80px;
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 179, 157, 0.28);
+            padding: 0.35rem 0.65rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--teal-dark);
+            background: rgba(15, 179, 157, 0.12);
+        }
+
+        .hero-main h1 {
             margin: 0 0 0.7rem;
-            font-family: 'Fraunces', serif;
-            font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.12;
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.85rem, 4vw, 3rem);
+            line-height: 1.08;
+            letter-spacing: -0.02em;
         }
-        .hero > p { margin: 0; color: var(--muted); max-width: 780px; font-size: 1.02rem; line-height: 1.7; }
 
-        /* ── Actions ── */
-        .actions { margin-top: 1.6rem; display: flex; flex-wrap: wrap; gap: 0.7rem; }
+        .hero-main p {
+            margin: 0;
+            color: var(--ink-1);
+            max-width: 760px;
+            font-size: 1.01rem;
+            line-height: 1.68;
+        }
+
+        .actions {
+            margin-top: 1.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+        }
+
         .btn {
-            text-decoration: none; color: #08131f; background: #fff;
-            border-radius: 12px; padding: 0.72rem 1.1rem; font-weight: 700; font-size: 0.95rem;
+            text-decoration: none;
+            color: #09322d;
+            border-radius: 12px;
+            padding: 0.72rem 1.05rem;
+            font-weight: 700;
+            font-size: 0.92rem;
             transition: transform 180ms ease, box-shadow 180ms ease;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.22); }
-        .btn.primary   { background: linear-gradient(90deg,#00d49f,#46f0c4); }
-        .btn.secondary { background: linear-gradient(90deg,#c8d8ff,#a5b8ff); }
-        .btn.doctor    { background: linear-gradient(90deg,#a8ffba,#68f08a); }
-        .btn.admin     { background: linear-gradient(90deg,#ffd17f,#ff9e68); }
-        .btn.accent    { background: linear-gradient(90deg,#d9b4fe,#a78bfa); }
 
-        /* ── Metrics strip ── */
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(15, 37, 55, 0.15);
+        }
+
+        .btn.primary {
+            background: linear-gradient(90deg, #14c8ac, #7fe3cf);
+        }
+
+        .btn.warm {
+            background: linear-gradient(90deg, #ffd091, #ffb287);
+            color: #50280c;
+        }
+
+        .hero-highlights {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.55rem;
+            margin-top: 1.1rem;
+        }
+
+        .hl {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.66);
+            border-radius: 12px;
+            padding: 0.65rem 0.7rem;
+            font-size: 0.82rem;
+            color: var(--ink-1);
+        }
+
+        .hl strong {
+            display: block;
+            color: var(--ink-0);
+            font-size: 0.97rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .hero-side {
+            padding: 1.2rem;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .quick-tile {
+            border-radius: 14px;
+            padding: 0.95rem;
+            border: 1px solid var(--line);
+            background: #fff;
+        }
+
+        .quick-tile .k {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-1);
+        }
+
+        .quick-tile .v {
+            margin-top: 0.2rem;
+            font-weight: 800;
+            font-size: 1.1rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .time-grid {
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed var(--line);
+            padding: 0.33rem 0;
+            font-size: 0.9rem;
+        }
+
+        .time-row:last-child {
+            border-bottom: 0;
+        }
+
+        .time-row span {
+            color: var(--ink-1);
+        }
+
         .metrics {
             margin-top: 1.4rem;
-            display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0.8rem;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.8rem;
         }
+
         .metric {
-            border: 1px solid var(--surface-border); border-radius: 14px;
-            background: var(--surface); padding: 0.9rem 1rem;
-            animation: reveal 1050ms ease-out;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.76);
+            padding: 0.9rem 1rem;
+            animation: rise 1000ms ease-out;
         }
-        .metric .label { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-        .metric .value { font-size: 1.08rem; font-weight: 800; margin-top: 0.3rem; }
 
-        /* ── Two-column grid below metrics ── */
+        .metric .label {
+            font-size: 0.78rem;
+            color: var(--ink-1);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .metric .value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-top: 0.3rem;
+        }
+
         .grid { margin-top: 1.2rem; display: grid; grid-template-columns: 2fr 1fr; gap: 0.9rem; }
-        .panel { border: 1px solid var(--surface-border); border-radius: 16px; background: var(--surface); padding: 1.1rem 1.3rem; }
-        .panel h2 { margin: 0 0 0.7rem; font-size: 1.05rem; }
-        .feature-list { margin: 0; padding-left: 1.1rem; color: var(--muted); line-height: 1.75; font-size: 0.97rem; }
-        .time-row {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px dashed rgba(255,255,255,0.13); padding: 0.48rem 0; font-size: 0.93rem;
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.76);
+            padding: 1.1rem 1.3rem;
         }
-        .time-row:last-child { border-bottom: 0; }
-        .time-row span { color: var(--muted); }
 
-        /* ── Footer note ── */
-        .foot { margin-top: 1.1rem; color: var(--muted); font-size: 0.93rem; }
-        .foot strong { color: var(--text); }
+        .panel h2 {
+            margin: 0 0 0.7rem;
+            font-size: 1.03rem;
+            font-family: 'Outfit', sans-serif;
+        }
 
-        /* ── Keyframes ── */
+        .feature-list {
+            margin: 0;
+            padding-left: 1.1rem;
+            color: var(--ink-1);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .portal-wrap {
+            margin-top: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--card-strong);
+            padding: 1.2rem;
+            box-shadow: 0 20px 45px rgba(20, 45, 68, 0.11);
+        }
+
+        .portal-head {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            margin-bottom: 0.85rem;
+            align-items: center;
+        }
+
+        .portal-head h2 {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.22rem;
+        }
+
+        .portal-head p {
+            margin: 0;
+            color: var(--ink-1);
+            font-size: 0.92rem;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.7rem;
+        }
+
+        .portal-card {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 0.9rem;
+            background: linear-gradient(160deg, #ffffff, #f4fbff);
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .portal-card h3 {
+            margin: 0;
+            font-size: 0.98rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .portal-card p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--ink-1);
+            min-height: 2.35rem;
+        }
+
+        .portal-actions {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .mini-btn {
+            text-decoration: none;
+            border-radius: 10px;
+            padding: 0.45rem 0.62rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .mini-btn.login {
+            background: linear-gradient(90deg, #16c0a5, #93e9d9);
+            color: #073830;
+        }
+
+        .mini-btn.alt {
+            background: #eef5fb;
+            color: #2f4f68;
+            border: 1px solid var(--line);
+        }
+
+        .foot {
+            margin-top: 1.1rem;
+            color: var(--ink-1);
+            font-size: 0.9rem;
+        }
+
+        .foot strong { color: var(--ink-0); }
+
         @keyframes pulse-warn {
             0%,100% { box-shadow: 0 0 0 0 rgba(255,203,102,0.55); }
             70%      { box-shadow: 0 0 0 8px rgba(255,203,102,0); }
@@ -155,27 +471,46 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             0%,100% { box-shadow: 0 0 0 0 rgba(56,211,159,0.55); }
             70%      { box-shadow: 0 0 0 8px rgba(56,211,159,0); }
         }
-        @keyframes reveal {
+
+        @keyframes rise {
             from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Responsive ── */
         @media (max-width: 900px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+
             .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
             .grid    { grid-template-columns: 1fr; }
+
+            .portal-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
+
         @media (max-width: 520px) {
-            .hero { padding: 1.3rem; }
+            .hero-main {
+                padding: 1.3rem;
+            }
+
+            .hero-highlights {
+                grid-template-columns: 1fr;
+            }
+
             .actions { flex-direction: column; }
             .btn { text-align: center; }
+
+            .portal-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 <main class="page">
 
-    <!-- Top bar -->
     <header class="topbar">
         <div class="brand-wrap">
             <?php if ($siteLogoUrl !== ''): ?>
@@ -189,77 +524,156 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             <?php endif; ?>
             <div class="brand"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
+        <nav class="topnav" aria-label="Quick links">
+            <a class="chip-link" href="#portal">Sign In</a>
+            <a class="chip-link" href="patient/register.php">Register Patient</a>
+            <a class="chip-link" href="public_communications.php">Communications</a>
+            <a class="chip-link" href="accreditation.php">Accreditation</a>
+        </nav>
         <div class="status-pill" id="statusPill" role="status" aria-live="polite">
             <span class="dot" id="statusDot"></span>
             <span id="statusText">Checking live service status&hellip;</span>
         </div>
     </header>
 
-    <!-- Hero card -->
-    <section class="hero">
-        <h1>Trusted care delivery, engineered for global reliability.</h1>
-        <p>
-            A unified care platform for patients, doctors, and administrators &mdash; with live system health
-            monitoring, bilingual readiness, and always-on access designed for regional and cross-border
-            healthcare operations.
-        </p>
+    <section class="hero-grid">
+        <article class="hero-main">
+            <span class="eyebrow">Connected Care Network</span>
+            <h1>Built for confidence: a hospital web experience that feels premium and alive.</h1>
+            <p>
+                From first contact to discharge follow-up, this platform centralizes patient services, clinical work,
+                compliance workflows, and live operational monitoring in one cohesive experience.
+            </p>
+            <div class="actions">
+                <a href="#portal" class="btn primary">Sign In From Home Page</a>
+                <a href="patient/register.php" class="btn warm">Create Patient Account</a>
+            </div>
+            <div class="hero-highlights">
+                <div class="hl"><strong>Realtime Health</strong>API heartbeat checks and visible service status.</div>
+                <div class="hl"><strong>Role Portals</strong>Dedicated login routes for all care teams.</div>
+                <div class="hl"><strong>Bilingual Ready</strong>Prepared for multilingual care operations.</div>
+            </div>
+        </article>
 
-        <nav class="actions" aria-label="Portal access">
-            <a href="patient/login.php"    class="btn primary">Patient Sign In</a>
-            <a href="patient/register.php" class="btn secondary">Create Patient Account</a>
-            <a href="doctor/login.php"     class="btn doctor">Doctor Sign In</a>
-            <a href="admin/login.php"      class="btn admin">Admin Sign In</a>
-            <a href="accreditation.php"    class="btn accent">Accreditation Centre</a>
-        </nav>
-
-        <!-- Live metrics strip -->
-        <div class="metrics" role="list">
-            <article class="metric" role="listitem">
-                <div class="label">Platform Status</div>
-                <div class="value" id="metricStatus">Syncing&hellip;</div>
-            </article>
-            <article class="metric" role="listitem">
-                <div class="label">Languages</div>
-                <div class="value">English &amp; Français</div>
-            </article>
-            <article class="metric" role="listitem">
-                <div class="label">Payment Hotline</div>
-                <div class="value"><?php echo htmlspecialchars(PAYMENT_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
-            </article>
-            <article class="metric" role="listitem">
-                <div class="label">Customer Service</div>
-                <div class="value"><?php echo htmlspecialchars(CUSTOMER_SERVICE_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
-            </article>
-        </div>
-
-        <!-- Info panels -->
-        <div class="grid">
-            <section class="panel">
-                <h2>Worldwide Reliability Profile</h2>
-                <ul class="feature-list">
-                    <li>Live database heartbeat through a dedicated API health endpoint.</li>
-                    <li>Role-based access controls for patient, doctor, and admin portals.</li>
-                    <li>Cross-timezone operational visibility for distributed care teams.</li>
-                    <li>Structured accreditation workflow supporting compliance programs.</li>
-                    <li>Secure, escaped output and server-side error logging throughout.</li>
-                    <li>Pharmacy inventory, lab reports, AI suggestions, and audit logs built in.</li>
-                </ul>
-            </section>
-            <aside class="panel">
-                <h2>Global Clock</h2>
-                <div class="time-row"><span>Douala (WAT)</span><strong id="timeDouala">--:--</strong></div>
-                <div class="time-row"><span>UTC</span><strong id="timeUtc">--:--</strong></div>
-                <div class="time-row"><span>New York (ET)</span><strong id="timeNy">--:--</strong></div>
-                <div class="time-row"><span>London (GMT/BST)</span><strong id="timeLondon">--:--</strong></div>
-                <div class="time-row"><span>Tokyo (JST)</span><strong id="timeTokyo">--:--</strong></div>
-            </aside>
-        </div>
-
-        <p class="foot">
-            Health endpoint: <strong>/api/health.php</strong> &nbsp;&middot;&nbsp;
-            Last checked: <span id="healthTimestamp">pending&hellip;</span>
-        </p>
+        <aside class="hero-side">
+            <div class="quick-tile">
+                <div class="k">Payment Hotline</div>
+                <div class="v"><?php echo htmlspecialchars(PAYMENT_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
+            </div>
+            <div class="quick-tile">
+                <div class="k">Customer Service</div>
+                <div class="v"><?php echo htmlspecialchars(CUSTOMER_SERVICE_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
+            </div>
+            <div class="quick-tile">
+                <div class="k">Global Clock</div>
+                <div class="time-grid">
+                    <div class="time-row"><span>Douala</span><strong id="timeDouala">--:--</strong></div>
+                    <div class="time-row"><span>UTC</span><strong id="timeUtc">--:--</strong></div>
+                    <div class="time-row"><span>New York</span><strong id="timeNy">--:--</strong></div>
+                    <div class="time-row"><span>London</span><strong id="timeLondon">--:--</strong></div>
+                    <div class="time-row"><span>Tokyo</span><strong id="timeTokyo">--:--</strong></div>
+                </div>
+            </div>
+        </aside>
     </section>
+
+    <section class="portal-wrap" id="portal">
+        <div class="portal-head">
+            <h2>Login Access On Home Page</h2>
+            <p>All sign in options stay right here on the homepage, exactly as requested.</p>
+        </div>
+        <div class="portal-grid">
+            <article class="portal-card">
+                <h3>Patient Portal</h3>
+                <p>Appointments, records, and payments in one secure space.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="patient/login.php">Patient Sign In</a>
+                    <a class="mini-btn alt" href="patient/register.php">Register</a>
+                </div>
+            </article>
+            <article class="portal-card">
+                <h3>Doctor Portal</h3>
+                <p>Consultations, shift attendance, and care updates.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="doctor/login.php">Doctor Sign In</a>
+                </div>
+            </article>
+            <article class="portal-card">
+                <h3>Staff Portal</h3>
+                <p>Operational workflows, reporting, and communications.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="staff/login.php">Staff Sign In</a>
+                </div>
+            </article>
+            <article class="portal-card">
+                <h3>Intern Portal</h3>
+                <p>Guided access for internship and supervision tasks.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="intern/login.php">Intern Sign In</a>
+                </div>
+            </article>
+            <article class="portal-card">
+                <h3>Trainee Portal</h3>
+                <p>Shift activities and learning operations in one place.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="trainee/login.php">Trainee Sign In</a>
+                </div>
+            </article>
+            <article class="portal-card">
+                <h3>Admin Portal</h3>
+                <p>Governance, page management, and system oversight.</p>
+                <div class="portal-actions">
+                    <a class="mini-btn login" href="admin/login.php">Admin Sign In</a>
+                    <a class="mini-btn alt" href="accreditation.php">Accreditation</a>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="metrics" role="list">
+        <article class="metric" role="listitem">
+            <div class="label">Platform Status</div>
+            <div class="value" id="metricStatus">Syncing&hellip;</div>
+        </article>
+        <article class="metric" role="listitem">
+            <div class="label">Languages</div>
+            <div class="value">English &amp; Français</div>
+        </article>
+        <article class="metric" role="listitem">
+            <div class="label">Payment Hotline</div>
+            <div class="value"><?php echo htmlspecialchars(PAYMENT_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
+        </article>
+        <article class="metric" role="listitem">
+            <div class="label">Customer Service</div>
+            <div class="value"><?php echo htmlspecialchars(CUSTOMER_SERVICE_NUMBER, ENT_QUOTES, 'UTF-8'); ?></div>
+        </article>
+    </section>
+
+    <div class="grid">
+        <section class="panel">
+            <h2>Why This Experience Feels Captivating</h2>
+            <ul class="feature-list">
+                <li>Editorial hero composition with layered gradients and cards for visual depth.</li>
+                <li>All role logins available on home page without navigation friction.</li>
+                <li>Realtime operational status connected to a live health endpoint.</li>
+                <li>Clear call paths for registration, accreditation, and public communications.</li>
+                <li>Mobile-first responsive behavior for teams and patients on the move.</li>
+            </ul>
+        </section>
+        <aside class="panel">
+            <h2>Public Access</h2>
+            <ul class="feature-list">
+                <li><a href="public_communications.php">Public Communications Board</a></li>
+                <li><a href="sitemap.php">Site Map</a></li>
+                <li><a href="accreditation.php">Accreditation and Compliance</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <p class="foot">
+        Health endpoint: <strong>/api/health.php</strong> &middot;
+        Last checked: <span id="healthTimestamp">pending&hellip;</span>
+    </p>
 
 </main>
 

@@ -41,7 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = 'Registration successful. Please sign in.';
         } catch (PDOException $e) {
             error_log('Patient registration DB error: ' . $e->getMessage());
-            $message = 'Registration failed due to a system error. Please try again.';
+            $errorText = strtolower($e->getMessage());
+            if (str_contains($errorText, 'unique') || str_contains($errorText, 'duplicate')) {
+                $message = 'That username or email is already in use. Please choose a different one.';
+            } else {
+                $message = 'Registration failed due to a system error. Please try again.';
+            }
         }
     }
 }

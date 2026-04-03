@@ -36,3 +36,7 @@ Thumbs.db
 # === Build artifacts ===
 *.zip
 *.tar.gz
+
+# === Temporary dev/test scripts ===
+tmp_*.php
+tmp_*.ps1
