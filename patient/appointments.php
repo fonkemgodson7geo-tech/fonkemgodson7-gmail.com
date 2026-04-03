@@ -10,15 +10,22 @@ $error = '';
 
 try {
     $pdo = getDB();
+    $patientProfileStmt = $pdo->prepare('SELECT id FROM patients WHERE user_id = ? LIMIT 1');
+    $patientProfileStmt->execute([(int)$user['id']]);
+    $patientProfileId = (int)$patientProfileStmt->fetchColumn();
+
     $stmt = $pdo->prepare(
         'SELECT a.id, a.appointment_date, a.service_type, a.status, a.notes,
-                u.first_name AS doctor_first_name, u.last_name AS doctor_last_name
+                 COALESCE(u_from_doctors.first_name, u_legacy.first_name) AS doctor_first_name,
+                 COALESCE(u_from_doctors.last_name, u_legacy.last_name) AS doctor_last_name
          FROM appointments a
-         LEFT JOIN users u ON a.doctor_id = u.id
-         WHERE a.patient_id = ?
+            LEFT JOIN doctors d ON a.doctor_id = d.id
+            LEFT JOIN users u_from_doctors ON d.user_id = u_from_doctors.id
+            LEFT JOIN users u_legacy ON a.doctor_id = u_legacy.id
+         WHERE a.patient_id = ? OR a.patient_id = ?
          ORDER BY a.appointment_date DESC'
     );
-    $stmt->execute([$user['id']]);
+    $stmt->execute([$patientProfileId > 0 ? $patientProfileId : -1, (int)$user['id']]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('Patient appointments page error: ' . $e->getMessage());

@@ -10,9 +10,19 @@ if ($_SESSION['user']['role'] !== 'doctor') {
 }
 
 $user = $_SESSION['user'];
-$doctor_id = $user['id'];
+$doctor_user_id = (int)$user['id'];
+$doctor_profile_id = 0;
 
 $message = '';
+
+try {
+    $pdo = getDB();
+    $profileStmt = $pdo->prepare('SELECT id FROM doctors WHERE user_id = ? LIMIT 1');
+    $profileStmt->execute([$doctor_user_id]);
+    $doctor_profile_id = (int)$profileStmt->fetchColumn();
+} catch (PDOException $e) {
+    error_log('Doctor appointments profile lookup error: ' . $e->getMessage());
+}
 
 if (isset($_POST['update_status'])) {
     $appointment_id = $_POST['appointment_id'];
@@ -21,7 +31,7 @@ if (isset($_POST['update_status'])) {
     try {
         $pdo = getDB();
         $stmt = $pdo->prepare("UPDATE appointments SET status = ? WHERE id = ? AND doctor_id = ?");
-        $stmt->execute([$status, $appointment_id, $doctor_id]);
+        $stmt->execute([$status, $appointment_id, $doctor_profile_id]);
         $message = 'Appointment status updated successfully';
     } catch (PDOException $e) {
         $message = 'Error updating appointment';
@@ -83,7 +93,7 @@ if (isset($_POST['update_status'])) {
                                 WHERE a.doctor_id = ?
                                 ORDER BY a.appointment_date ASC
                             ");
-                            $stmt->execute([$doctor_id]);
+                            $stmt->execute([$doctor_profile_id]);
                             $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             
                             foreach ($appointments as $appointment) {

@@ -258,6 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </form>
 
                 <div class="register-link">
+                    <div class="mb-2">
+                        <a href="forgot_password.php"><i class="bi bi-key"></i> Forgot password?</a>
+                    </div>
                     Don't have an account? <a href="register.php"><i class="bi bi-plus-circle"></i> Create one now</a>
                 </div>
             </div>
