@@ -1,7 +1,13 @@
 FROM php:8.3-cli-alpine
 
-RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite pdo_mysql \
+RUN apk add --no-cache --virtual .build-deps \
+        autoconf \
+        g++ \
+        gcc \
+        make \
+        pkgconf \
+        sqlite-dev \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_sqlite pdo_mysql \
     && apk del .build-deps
 
 WORKDIR /app
