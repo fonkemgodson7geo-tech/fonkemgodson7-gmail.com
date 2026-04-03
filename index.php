@@ -23,6 +23,7 @@ function verifyHomeCsrf(): bool {
 
 $uploadMessage = '';
 $uploadError = '';
+$autoOpenUploadUrl = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_home_file'])) {
     if (!verifyHomeCsrf()) {
@@ -58,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_home_file'])) 
                             $uploadError = 'Could not save uploaded file.';
                         } else {
                             $uploadMessage = 'File uploaded successfully: ' . $filename;
+                            $autoOpenUploadUrl = 'uploads/home_uploads/' . rawurlencode($filename);
                         }
                     }
                 }
@@ -907,6 +909,12 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
     setInterval(loadHealth, 60000);
     setInterval(updateClock, 1000);
 }());
+
+<?php if ($autoOpenUploadUrl !== ''): ?>
+window.addEventListener('load', function () {
+    window.open('<?php echo htmlspecialchars($autoOpenUploadUrl, ENT_QUOTES, 'UTF-8'); ?>', '_blank', 'noopener');
+});
+<?php endif; ?>
 </script>
 </body>
 </html>

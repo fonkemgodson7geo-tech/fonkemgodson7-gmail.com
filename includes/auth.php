@@ -116,6 +116,57 @@ function verifyPassword($password, $hash) {
     return password_verify($password, $hash);
 }
 
+function _sqliteTableExists(PDO $pdo, string $tableName): bool {
+    $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1");
+    $stmt->execute([$tableName]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function _sqliteEnsureIdentitySchema(PDO $pdo): void {
+    if (_sqliteTableExists($pdo, 'users') && _sqliteTableExists($pdo, 'doctors')) {
+        return;
+    }
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('patient', 'doctor', 'admin', 'staff', 'intern', 'trainee', 'pharmacist', 'nurse', 'manager', 'compliance_officer', 'qa_tester', 'developer', 'translator')),
+        first_name TEXT,
+        last_name TEXT,
+        phone TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        medical_record_number TEXT UNIQUE,
+        date_of_birth DATE,
+        gender TEXT CHECK (gender IN ('male', 'female', 'other')),
+        address TEXT,
+        emergency_contact TEXT,
+        emergency_phone TEXT,
+        blood_type TEXT,
+        allergies TEXT,
+        medical_history TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS doctors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        specialization TEXT,
+        license_number TEXT,
+        availability TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )");
+}
+
 // Function to get PDO connection
 function getDB() {
     static $pdo = null;
@@ -127,6 +178,7 @@ function getDB() {
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 // Enable foreign keys for SQLite
                 $pdo->exec('PRAGMA foreign_keys = ON');
+                _sqliteEnsureIdentitySchema($pdo);
             } else {
                 // MySQL connection (legacy)
                 $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
