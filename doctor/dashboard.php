@@ -11,13 +11,21 @@ if ($_SESSION['user']['role'] !== 'doctor') {
 }
 
 $user = $_SESSION['user'];
-$doctor_id = $user['id'];
+$doctor_user_id = (int)$user['id'];
+$doctor_id = $doctor_user_id;
+$doctor_profile_id = 0;
 $shiftMessage = '';
 $shiftError = '';
 $todayShift = null;
 
 try {
     $shiftPdo = getDB();
+    $profileStmt = $shiftPdo->prepare('SELECT id FROM doctors WHERE user_id = ? LIMIT 1');
+    $profileStmt->execute([$doctor_user_id]);
+    $doctor_profile_id = (int)$profileStmt->fetchColumn();
+    if ($doctor_profile_id > 0) {
+        $doctor_id = $doctor_profile_id;
+    }
     $todayShift = shiftHandleAction($shiftPdo, (int)$doctor_id, $shiftMessage, $shiftError);
 } catch (Throwable $e) {
     error_log('Doctor shift attendance error: ' . $e->getMessage());
@@ -356,7 +364,11 @@ try {
                     <div class="stat-number"><?php
                         try {
                             $pdo = getDB();
-                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND DATE(appointment_date) = CURDATE() AND status = 'confirmed'");
+                            if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND date(appointment_date) = date('now') AND status = 'confirmed'");
+                            } else {
+                                $stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND DATE(appointment_date) = CURDATE() AND status = 'confirmed'");
+                            }
                             $stmt->execute([$doctor_id]);
                             echo $stmt->fetchColumn();
                         } catch (PDOException $e) {
@@ -434,9 +446,10 @@ try {
                             try {
                                 $pdo = getDB();
                                 $stmt = $pdo->prepare("
-                                    SELECT c.*, p.first_name, p.last_name
+                                    SELECT c.*, u.first_name, u.last_name
                                     FROM consultations c
                                     JOIN patients p ON c.patient_id = p.id
+                                    LEFT JOIN users u ON p.user_id = u.id
                                     WHERE c.doctor_id = ?
                                     ORDER BY c.created_at DESC
                                     LIMIT 5

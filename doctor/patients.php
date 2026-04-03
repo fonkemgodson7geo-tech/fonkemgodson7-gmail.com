@@ -10,7 +10,20 @@ if ($_SESSION['user']['role'] !== 'doctor') {
 }
 
 $user = $_SESSION['user'];
-$doctor_id = $user['id'];
+$doctor_user_id = (int)$user['id'];
+$doctor_id = $doctor_user_id;
+
+try {
+    $pdo = getDB();
+    $profileStmt = $pdo->prepare('SELECT id FROM doctors WHERE user_id = ? LIMIT 1');
+    $profileStmt->execute([$doctor_user_id]);
+    $doctorProfileId = (int)$profileStmt->fetchColumn();
+    if ($doctorProfileId > 0) {
+        $doctor_id = $doctorProfileId;
+    }
+} catch (PDOException $e) {
+    error_log('Doctor patients profile lookup error: ' . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,7 +94,8 @@ $doctor_id = $user['id'];
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='5'>Database error: " . $e->getMessage() . "</td></tr>";
+                            error_log('Doctor patients list error: ' . $e->getMessage());
+                            echo "<tr><td colspan='5'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>

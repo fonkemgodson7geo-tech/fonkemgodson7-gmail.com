@@ -10,7 +10,20 @@ if ($_SESSION['user']['role'] !== 'doctor') {
 }
 
 $user = $_SESSION['user'];
-$doctor_id = $user['id'];
+$doctor_user_id = (int)$user['id'];
+$doctor_id = $doctor_user_id;
+
+try {
+    $pdo = getDB();
+    $profileStmt = $pdo->prepare('SELECT id FROM doctors WHERE user_id = ? LIMIT 1');
+    $profileStmt->execute([$doctor_user_id]);
+    $doctorProfileId = (int)$profileStmt->fetchColumn();
+    if ($doctorProfileId > 0) {
+        $doctor_id = $doctorProfileId;
+    }
+} catch (PDOException $e) {
+    error_log('Doctor lab reports profile lookup error: ' . $e->getMessage());
+}
 
 $message = '';
 
@@ -37,11 +50,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         try {
             $pdo = getDB();
-            $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, CURDATE())");
+            if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, date('now'))");
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, CURDATE())");
+            }
             $stmt->execute([$patient_id, $doctor_id, $test_name, $results, $image_path]);
             $message = 'Lab report added successfully';
         } catch (PDOException $e) {
-            $message = 'Error adding lab report: ' . $e->getMessage();
+            error_log('Doctor add lab report error: ' . $e->getMessage());
+            $message = 'Error adding lab report';
         }
     } elseif (isset($_POST['update_results'])) {
         $report_id = $_POST['report_id'];
@@ -167,9 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         try {
                             $pdo = getDB();
                             $stmt = $pdo->prepare("
-                                SELECT lr.*, p.first_name, p.last_name
+                                SELECT lr.*, u.first_name, u.last_name
                                 FROM lab_reports lr
                                 JOIN patients p ON lr.patient_id = p.id
+                                LEFT JOIN users u ON p.user_id = u.id
                                 WHERE lr.doctor_id = ?
                                 ORDER BY lr.report_date DESC
                             ");
@@ -199,7 +218,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='6'>Database error: " . $e->getMessage() . "</td></tr>";
+                            error_log('Doctor lab reports list error: ' . $e->getMessage());
+                            echo "<tr><td colspan='6'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>

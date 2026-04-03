@@ -86,7 +86,7 @@ if (isset($_POST['update_status'])) {
                         try {
                             $pdo = getDB();
                             $stmt = $pdo->prepare("
-                                SELECT a.*, p.first_name, p.last_name, u.phone
+                                SELECT a.*, u.first_name, u.last_name, u.phone
                                 FROM appointments a
                                 JOIN patients p ON a.patient_id = p.id
                                 JOIN users u ON p.user_id = u.id
@@ -118,7 +118,8 @@ if (isset($_POST['update_status'])) {
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
-                            echo "<tr><td colspan='5'>Database error: " . $e->getMessage() . "</td></tr>";
+                            error_log('Doctor appointments listing error: ' . $e->getMessage());
+                            echo "<tr><td colspan='5'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>
