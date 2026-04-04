@@ -10,6 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (strcasecmp($username, ADMIN_LOGIN_USERNAME) !== 0) {
+        writeAuditLog(
+            'admin login denied',
+            'users',
+            null,
+            null,
+            ['attempted_username' => $username, 'reason' => 'non-designated admin username']
+        );
         $message = 'Access denied. This portal is restricted to the designated admin account.';
     } else {
         try {
@@ -20,9 +27,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             if ($user && verifyPassword($password, $user['password'])) {
                 loginUser($user);
+                writeAuditLog(
+                    'admin login success',
+                    'users',
+                    (int)$user['id'],
+                    null,
+                    ['username' => (string)$user['username'], 'role' => (string)$user['role']]
+                );
                 header('Location: dashboard.php');
                 exit;
             } else {
+                writeAuditLog(
+                    'admin login failed',
+                    'users',
+                    $user ? (int)$user['id'] : null,
+                    null,
+                    ['attempted_username' => $username, 'reason' => 'invalid credentials']
+                );
                 $message = 'Invalid credentials';
             }
         } catch (PDOException $e) {

@@ -19,9 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
         try {
             $pdo = getDB();
 
-            $userStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+            $userStmt = $pdo->prepare('SELECT username, role, email, first_name, last_name FROM users WHERE id = ? LIMIT 1');
             $userStmt->execute([$userId]);
-            $targetUsername = (string)$userStmt->fetchColumn();
+            $targetUser = $userStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            $targetUsername = (string)($targetUser['username'] ?? '');
+            $currentRole = (string)($targetUser['role'] ?? '');
 
             if ($targetUsername !== '' && strcasecmp($targetUsername, ADMIN_LOGIN_USERNAME) === 0 && $role !== 'admin') {
                 $error = 'The designated admin account cannot be changed to another role.';
@@ -30,6 +32,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
             } else {
                 $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
                 $stmt->execute([$role, $userId]);
+                writeAuditLog(
+                    'update user role',
+                    'users',
+                    $userId,
+                    [
+                        'username' => $targetUsername,
+                        'role' => $currentRole,
+                    ],
+                    [
+                        'username' => $targetUsername,
+                        'role' => $role,
+                    ]
+                );
                 $message = 'User role updated successfully.';
             }
         } catch (PDOException $e) {

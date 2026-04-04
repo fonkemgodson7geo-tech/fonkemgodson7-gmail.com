@@ -1,6 +1,7 @@
 <?php
 require_once '../config/config.php';
 require_once '../includes/auth.php';
+require_once '../includes/realtime_gateway.php';
 
 requireDesignatedAdmin();
 
@@ -22,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     } else {
         try {
             $pdo = getDB();
-            $stmt = $pdo->prepare('SELECT id, username, password, role FROM users WHERE id = ? LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, username, password, role, email FROM users WHERE id = ? LIMIT 1');
             $stmt->execute([(int)$user['id']]);
             $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -42,6 +43,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     ['username' => (string)$dbUser['username'], 'role' => (string)$dbUser['role'], 'password_changed' => true]
                 );
                 $message = 'Password updated successfully.';
+
+                $alertEmail = trim((string)($user['email'] ?? ''));
+                if ($alertEmail === '' && filter_var((string)($dbUser['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
+                    $alertEmail = (string)$dbUser['email'];
+                }
+
+                if ($alertEmail !== '' && filter_var($alertEmail, FILTER_VALIDATE_EMAIL)) {
+                    $failureReason = null;
+                    $subject = SITE_NAME . ' admin password changed';
+                    $htmlBody = '<p>The designated admin password was changed successfully.</p>'
+                        . '<p><strong>Account:</strong> ' . htmlspecialchars((string)$dbUser['username'], ENT_QUOTES, 'UTF-8') . '</p>'
+                        . '<p><strong>Time:</strong> ' . htmlspecialchars(date('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8') . '</p>'
+                        . '<p>If this was not you, investigate immediately.</p>';
+                    $textBody = 'The designated admin password was changed successfully for account ' . (string)$dbUser['username'] . ' at ' . date('Y-m-d H:i:s') . '.';
+
+                    if (!rtSendEmail($alertEmail, $subject, $htmlBody, $textBody, $failureReason)) {
+                        $message .= ' Password changed, but email alert could not be sent.';
+                        writeAuditLog(
+                            'admin password change email failed',
+                            'users',
+                            (int)$dbUser['id'],
+                            null,
+                            ['email' => $alertEmail, 'failure_reason' => $failureReason ?: 'unknown']
+                        );
+                    }
+                }
             }
         } catch (PDOException $e) {
             error_log('Admin change password error: ' . $e->getMessage());
