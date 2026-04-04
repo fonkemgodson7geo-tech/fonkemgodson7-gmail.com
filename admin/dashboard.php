@@ -221,6 +221,9 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="../pharmacy/dashboard.php">
                         <i class="bi bi-capsule-pill"></i> Pharmacy
                     </a>
+                    <a class="nav-link" href="change_password.php">
+                        <i class="bi bi-key"></i> Password
+                    </a>
                     <a class="nav-link" href="logout.php">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>

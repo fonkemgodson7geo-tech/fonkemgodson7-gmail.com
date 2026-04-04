@@ -143,6 +143,7 @@ try {
                     <a class="nav-link" href="dashboard.php">Dashboard</a>
                     <a class="nav-link" href="manage_users.php">Users</a>
                     <a class="nav-link active" href="manage_pharmacy_doctors.php">Pharmacy Access</a>
+                    <a class="nav-link" href="change_password.php">Password</a>
                     <a class="nav-link" href="../index.php?logout">Logout</a>
                 </div>
             </div>

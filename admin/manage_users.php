@@ -18,9 +18,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
     } else {
         try {
             $pdo = getDB();
+
+            $userStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+            $userStmt->execute([$userId]);
+            $targetUsername = (string)$userStmt->fetchColumn();
+
+            if ($targetUsername !== '' && strcasecmp($targetUsername, ADMIN_LOGIN_USERNAME) === 0 && $role !== 'admin') {
+                $error = 'The designated admin account cannot be changed to another role.';
+            } else {
             $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
             $stmt->execute([$role, $userId]);
             $message = 'User role updated successfully.';
+            }
         } catch (PDOException $e) {
             error_log('Manage users update role error: ' . $e->getMessage());
             $error = 'Could not update user role.';
@@ -56,6 +65,7 @@ try {
             <a class="nav-link active" href="manage_users.php">Manage Users</a>
             <a class="nav-link" href="manage_groups.php">Patient Groups</a>
             <a class="nav-link" href="attendance.php">Attendance</a>
+            <a class="nav-link" href="change_password.php">Password</a>
             <a class="nav-link" href="logout.php">Logout</a>
         </div>
     </div>
