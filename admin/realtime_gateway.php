@@ -3,7 +3,7 @@ require_once '../config/config.php';
 require_once '../includes/auth.php';
 require_once '../includes/realtime_gateway.php';
 
-requireRole('admin');
+requireDesignatedAdmin();
 
 $status = rtGatewayStatus();
 $message = '';

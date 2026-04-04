@@ -56,6 +56,24 @@ function requireRole(string $role): void {
     }
 }
 
+function hasDesignatedAdminAccess(): bool {
+    if (!isLoggedIn()) {
+        return false;
+    }
+
+    $role = (string)($_SESSION['user']['role'] ?? '');
+    $username = (string)($_SESSION['user']['username'] ?? '');
+    return $role === 'admin' && strcasecmp($username, ADMIN_LOGIN_USERNAME) === 0;
+}
+
+function requireDesignatedAdmin(): void {
+    requireLogin();
+    if (!hasDesignatedAdminAccess()) {
+        header('Location: ../index.php');
+        exit;
+    }
+}
+
 // Function to check role
 function hasRole(string $role): bool {
     if (!isLoggedIn()) return false;

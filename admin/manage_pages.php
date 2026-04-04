@@ -2,7 +2,7 @@
 require_once '../config/config.php';
 require_once '../includes/auth.php';
 
-requireRole('admin');
+requireDesignatedAdmin();
 
 $message = '';
 $error = '';
