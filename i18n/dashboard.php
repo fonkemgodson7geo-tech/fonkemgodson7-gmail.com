@@ -16,6 +16,7 @@ $currentLang = $_GET['lang'] ?? 'en';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
     $action = $_POST['action'] ?? '';
     
     try {
@@ -154,8 +155,6 @@ function __($key, $lang = null) {
             <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - i18n</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link active" href="dashboard.php">Dashboard</a>
-                <a class="nav-link" href="translations.php">Translations</a>
-                <a class="nav-link" href="languages.php">Languages</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
             </div>
         </div>
@@ -249,6 +248,7 @@ function __($key, $lang = null) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="add_translation">
                             
                             <div class="row">
@@ -293,6 +293,7 @@ function __($key, $lang = null) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="add_language">
                             
                             <div class="mb-3">
@@ -323,6 +324,7 @@ function __($key, $lang = null) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="export_translations">
                             
                             <div class="mb-3">

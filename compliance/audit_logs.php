@@ -14,7 +14,7 @@ $user = $_SESSION['user'];
 // Handle filters
 $filters = [
     'user_id' => $_GET['user_id'] ?? '',
-    'action_type' => $_GET['action_type'] ?? '',
+    'action' => $_GET['action'] ?? '',
     'date_from' => $_GET['date_from'] ?? '',
     'date_to' => $_GET['date_to'] ?? '',
     'table_name' => $_GET['table_name'] ?? ''
@@ -39,9 +39,9 @@ if (!empty($filters['user_id'])) {
     $params[] = $filters['user_id'];
 }
 
-if (!empty($filters['action_type'])) {
-    $query .= " AND al.action_type = ?";
-    $params[] = $filters['action_type'];
+if (!empty($filters['action'])) {
+    $query .= " AND al.action LIKE ?";
+    $params[] = '%' . $filters['action'] . '%';
 }
 
 if (!empty($filters['date_from'])) {
@@ -105,7 +105,6 @@ try {
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="dashboard.php">Dashboard</a>
                 <a class="nav-link active" href="audit_logs.php">Audit Logs</a>
-                <a class="nav-link" href="regulatory.php">Regulatory</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
             </div>
         </div>
@@ -137,14 +136,14 @@ try {
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label for="action_type" class="form-label">Action Type</label>
-                        <select class="form-select" id="action_type" name="action_type">
+                        <label for="action" class="form-label">Action</label>
+                        <select class="form-select" id="action" name="action">
                             <option value="">All Actions</option>
-                            <option value="create" <?php echo $filters['action_type'] == 'create' ? 'selected' : ''; ?>>Create</option>
-                            <option value="update" <?php echo $filters['action_type'] == 'update' ? 'selected' : ''; ?>>Update</option>
-                            <option value="delete" <?php echo $filters['action_type'] == 'delete' ? 'selected' : ''; ?>>Delete</option>
-                            <option value="login" <?php echo $filters['action_type'] == 'login' ? 'selected' : ''; ?>>Login</option>
-                            <option value="logout" <?php echo $filters['action_type'] == 'logout' ? 'selected' : ''; ?>>Logout</option>
+                            <option value="create" <?php echo $filters['action'] == 'create' ? 'selected' : ''; ?>>Create</option>
+                            <option value="update" <?php echo $filters['action'] == 'update' ? 'selected' : ''; ?>>Update</option>
+                            <option value="delete" <?php echo $filters['action'] == 'delete' ? 'selected' : ''; ?>>Delete</option>
+                            <option value="login" <?php echo $filters['action'] == 'login' ? 'selected' : ''; ?>>Login</option>
+                            <option value="logout" <?php echo $filters['action'] == 'logout' ? 'selected' : ''; ?>>Logout</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -178,7 +177,6 @@ try {
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Audit Log Entries (<?php echo $totalRecords; ?> total)</h5>
-                <a href="export_audit.php?<?php echo http_build_query($filters); ?>" class="btn btn-success btn-sm">Export CSV</a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -189,7 +187,6 @@ try {
                                 <th>User</th>
                                 <th>Action</th>
                                 <th>Table</th>
-                                <th>Description</th>
                                 <th>IP Address</th>
                                 <th>Details</th>
                             </tr>
@@ -197,7 +194,7 @@ try {
                         <tbody>
                             <?php if (empty($auditLogs)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center">No audit log entries found.</td>
+                                    <td colspan="6" class="text-center">No audit log entries found.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($auditLogs as $log): ?>
@@ -209,29 +206,35 @@ try {
                                         </td>
                                         <td>
                                             <?php
+                                            $actionText = strtolower((string)($log['action'] ?? ''));
                                             $badgeClass = 'secondary';
-                                            if ($log['action_type'] === 'create') {
+                                            if (strpos($actionText, 'create') === 0 || strpos($actionText, 'add') === 0) {
                                                 $badgeClass = 'success';
-                                            } elseif ($log['action_type'] === 'update') {
+                                            } elseif (strpos($actionText, 'update') === 0 || strpos($actionText, 'edit') === 0) {
                                                 $badgeClass = 'primary';
-                                            } elseif ($log['action_type'] === 'delete') {
+                                            } elseif (strpos($actionText, 'delete') === 0 || strpos($actionText, 'remove') === 0) {
                                                 $badgeClass = 'danger';
-                                            } elseif ($log['action_type'] === 'login') {
+                                            } elseif (strpos($actionText, 'login') !== false) {
                                                 $badgeClass = 'info';
-                                            } elseif ($log['action_type'] === 'logout') {
+                                            } elseif (strpos($actionText, 'logout') !== false) {
                                                 $badgeClass = 'secondary';
                                             }
                                             ?>
                                             <span class="badge bg-<?php echo $badgeClass; ?>">
-                                                <?php echo ucfirst($log['action_type']); ?>
+                                                <?php echo htmlspecialchars((string)($log['action'] ?? 'unknown')); ?>
                                             </span>
                                         </td>
                                         <td><?php echo htmlspecialchars($log['table_name'] ?? 'N/A'); ?></td>
-                                        <td><?php echo htmlspecialchars($log['action_description']); ?></td>
                                         <td><?php echo htmlspecialchars($log['ip_address']); ?></td>
                                         <td>
                                             <?php if ($log['old_values'] || $log['new_values']): ?>
-                                                <button class="btn btn-sm btn-outline-primary" onclick="showDetails(<?php echo $log['id']; ?>)">
+                                                <button
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#detailsModal"
+                                                    data-old="<?php echo htmlspecialchars((string)$log['old_values'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                    data-new="<?php echo htmlspecialchars((string)$log['new_values'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                >
                                                     View Details
                                                 </button>
                                             <?php else: ?>
@@ -290,30 +293,23 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function showDetails(logId) {
-            fetch('get_audit_details.php?id=' + logId)
-                .then(response => response.json())
-                .then(data => {
-                    let content = '<div class="row">';
-                    
-                    if (data.old_values) {
-                        content += '<div class="col-md-6"><h6>Old Values:</h6><pre>' + JSON.stringify(JSON.parse(data.old_values), null, 2) + '</pre></div>';
-                    }
-                    
-                    if (data.new_values) {
-                        content += '<div class="col-md-6"><h6>New Values:</h6><pre>' + JSON.stringify(JSON.parse(data.new_values), null, 2) + '</pre></div>';
-                    }
-                    
-                    content += '</div>';
-                    
-                    document.getElementById('detailsContent').innerHTML = content;
-                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
-                })
-                .catch(error => {
-                    document.getElementById('detailsContent').innerHTML = '<div class="alert alert-danger">Error loading details</div>';
-                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
-                });
-        }
+        const detailsModal = document.getElementById('detailsModal');
+        detailsModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const oldValues = button.getAttribute('data-old') || '';
+            const newValues = button.getAttribute('data-new') || '';
+
+            let content = '<div class="row">';
+            if (oldValues) {
+                content += '<div class="col-md-6"><h6>Old Values:</h6><pre>' + oldValues + '</pre></div>';
+            }
+            if (newValues) {
+                content += '<div class="col-md-6"><h6>New Values:</h6><pre>' + newValues + '</pre></div>';
+            }
+            content += '</div>';
+
+            document.getElementById('detailsContent').innerHTML = content;
+        });
     </script>
 </body>
 </html>

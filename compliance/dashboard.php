@@ -27,7 +27,6 @@ $user = $_SESSION['user'];
             <div class="navbar-nav ms-auto">
                 <a class="nav-link active" href="dashboard.php">Dashboard</a>
                 <a class="nav-link" href="audit_logs.php">Audit Logs</a>
-                <a class="nav-link" href="regulatory.php">Regulatory</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
             </div>
         </div>
@@ -44,7 +43,7 @@ $user = $_SESSION['user'];
                         <h3><?php
                             try {
                                 $pdo = getDB();
-                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_audits WHERE status = 'active'");
+                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_audits WHERE status IN ('planned', 'in_progress', 'active')");
                                 echo $stmt->fetchColumn();
                             } catch (PDOException $e) {
                                 echo 'N/A';
@@ -58,19 +57,16 @@ $user = $_SESSION['user'];
                     <div class="card-body">
                         <h5 class="card-title">Compliance Score</h5>
                         <h3><?php
-                            // Calculate compliance score based on various metrics
                             try {
                                 $pdo = getDB();
-                                
-                                // Get total compliance checks
-                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_checks");
-                                $totalChecks = $stmt->fetchColumn();
-                                
-                                // Get passed checks
-                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_checks WHERE status = 'passed'");
-                                $passedChecks = $stmt->fetchColumn();
-                                
-                                $score = $totalChecks > 0 ? round(($passedChecks / $totalChecks) * 100) : 0;
+
+                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_issues");
+                                $totalIssues = (int)$stmt->fetchColumn();
+
+                                $stmt = $pdo->query("SELECT COUNT(*) FROM compliance_issues WHERE status IN ('resolved', 'closed')");
+                                $resolvedIssues = (int)$stmt->fetchColumn();
+
+                                $score = $totalIssues > 0 ? round(($resolvedIssues / $totalIssues) * 100) : 100;
                                 echo $score . '%';
                             } catch (PDOException $e) {
                                 echo 'N/A';
@@ -102,7 +98,11 @@ $user = $_SESSION['user'];
                         <h3><?php
                             try {
                                 $pdo = getDB();
-                                $stmt = $pdo->prepare("SELECT COUNT(*) FROM regulatory_requirements WHERE due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM regulatory_requirements WHERE due_date BETWEEN date('now') AND date('now', '+30 day')");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM regulatory_requirements WHERE due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                                }
                                 $stmt->execute();
                                 echo $stmt->fetchColumn();
                             } catch (PDOException $e) {
@@ -138,23 +138,24 @@ $user = $_SESSION['user'];
                                 
                                 foreach ($logs as $log) {
                                     $badgeClass = 'secondary';
-                                    if ($log['action_type'] === 'create') {
+                                    $actionText = (string)($log['action'] ?? '');
+                                    if (stripos($actionText, 'create') === 0 || stripos($actionText, 'add') === 0) {
                                         $badgeClass = 'success';
-                                    } elseif ($log['action_type'] === 'update') {
+                                    } elseif (stripos($actionText, 'update') === 0 || stripos($actionText, 'edit') === 0) {
                                         $badgeClass = 'primary';
-                                    } elseif ($log['action_type'] === 'delete') {
+                                    } elseif (stripos($actionText, 'delete') === 0 || stripos($actionText, 'remove') === 0) {
                                         $badgeClass = 'danger';
-                                    } elseif ($log['action_type'] === 'login') {
+                                    } elseif (stripos($actionText, 'login') !== false) {
                                         $badgeClass = 'info';
                                     }
                                     
                                     echo "<div class='list-group-item'>";
                                     echo "<div class='d-flex w-100 justify-content-between'>";
-                                    echo "<h6 class='mb-1'>" . htmlspecialchars($log['action_description']) . "</h6>";
+                                    echo "<h6 class='mb-1'>" . htmlspecialchars($actionText !== '' ? $actionText : 'audit entry') . "</h6>";
                                     echo "<small class='text-muted'>" . date('M d, H:i', strtotime($log['created_at'])) . "</small>";
                                     echo "</div>";
                                     echo "<p class='mb-1'>By: " . htmlspecialchars($log['first_name'] . ' ' . $log['last_name']) . "</p>";
-                                    echo "<span class='badge bg-" . $badgeClass . "'>" . ucfirst($log['action_type']) . "</span>";
+                                    echo "<span class='badge bg-" . $badgeClass . "'>" . htmlspecialchars($actionText !== '' ? $actionText : 'unknown') . "</span>";
                                     echo "</div>";
                                 }
                             } catch (PDOException $e) {
@@ -239,12 +240,21 @@ $user = $_SESSION['user'];
                         <?php
                         try {
                             $pdo = getDB();
-                            $stmt = $pdo->prepare("
-                                SELECT * FROM regulatory_requirements 
-                                WHERE due_date >= CURDATE()
-                                ORDER BY due_date ASC
-                                LIMIT 10
-                            ");
+                            if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                $stmt = $pdo->prepare("\
+                                    SELECT * FROM regulatory_requirements 
+                                    WHERE due_date >= date('now')
+                                    ORDER BY due_date ASC
+                                    LIMIT 10
+                                ");
+                            } else {
+                                $stmt = $pdo->prepare("\
+                                    SELECT * FROM regulatory_requirements 
+                                    WHERE due_date >= CURDATE()
+                                    ORDER BY due_date ASC
+                                    LIMIT 10
+                                ");
+                            }
                             $stmt->execute();
                             $requirements = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             

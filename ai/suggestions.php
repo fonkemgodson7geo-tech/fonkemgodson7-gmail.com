@@ -13,6 +13,7 @@ $user = $_SESSION['user'];
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
     $action = $_POST['action'] ?? '';
     
     try {
@@ -50,20 +51,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $suggestion = generateAiSuggestion($suggestionType, $patient, $recentConsultations, $context);
             
             // Save suggestion
-            $stmt = $pdo->prepare("
-                INSERT INTO ai_suggestions (patient_id, doctor_id, suggestion_type, context_data, suggestion_text, confidence_score, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
-            ");
-            
             $confidence = rand(70, 95); // Simulated confidence score
-            $stmt->execute([
-                $patientId,
-                $user['id'],
-                $suggestionType,
-                json_encode(['patient' => $patient, 'consultations' => $recentConsultations, 'context' => $context]),
-                $suggestion,
-                $confidence
-            ]);
+            $contextData = json_encode(['patient' => $patient, 'consultations' => $recentConsultations, 'context' => $context]);
+
+            try {
+                // Newer schema (SQLite setup)
+                $stmt = $pdo->prepare("\
+                    INSERT INTO ai_suggestions (patient_id, doctor_id, suggestion_type, context_data, suggestion_text, confidence_score)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $patientId,
+                    $user['id'],
+                    $suggestionType,
+                    $contextData,
+                    $suggestion,
+                    $confidence
+                ]);
+            } catch (PDOException $e) {
+                // Legacy schema fallback (MySQL install.sql)
+                $stmt = $pdo->prepare("\
+                    INSERT INTO ai_suggestions (patient_id, suggestion_type, suggestion_text, confidence_score, suggested_by, accepted)
+                    VALUES (?, ?, ?, ?, ?, 0)
+                ");
+                $stmt->execute([
+                    $patientId,
+                    $suggestionType,
+                    $suggestion,
+                    $confidence,
+                    (string)($user['username'] ?? 'system')
+                ]);
+            }
             
             $message = 'AI suggestion generated successfully!';
             
@@ -71,8 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $suggestionId = $_POST['suggestion_id'];
             
             // Mark suggestion as applied
-            $stmt = $pdo->prepare("UPDATE ai_suggestions SET applied_at = NOW() WHERE id = ?");
-            $stmt->execute([$suggestionId]);
+            try {
+                $stmt = $pdo->prepare("UPDATE ai_suggestions SET applied_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $stmt->execute([$suggestionId]);
+            } catch (PDOException $e) {
+                $stmt = $pdo->prepare("UPDATE ai_suggestions SET accepted = 1 WHERE id = ?");
+                $stmt->execute([$suggestionId]);
+            }
             
             $message = 'Suggestion applied successfully!';
             
@@ -80,8 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $suggestionId = $_POST['suggestion_id'];
             
             // Mark suggestion as dismissed
-            $stmt = $pdo->prepare("UPDATE ai_suggestions SET dismissed_at = NOW() WHERE id = ?");
-            $stmt->execute([$suggestionId]);
+            try {
+                $stmt = $pdo->prepare("UPDATE ai_suggestions SET dismissed_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $stmt->execute([$suggestionId]);
+            } catch (PDOException $e) {
+                $stmt = $pdo->prepare("DELETE FROM ai_suggestions WHERE id = ?");
+                $stmt->execute([$suggestionId]);
+            }
             
             $message = 'Suggestion dismissed.';
         }
@@ -94,19 +122,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get recent suggestions
 try {
     $pdo = getDB();
-    $stmt = $pdo->prepare("
-        SELECT s.*, p.first_name, p.last_name
-        FROM ai_suggestions s
-        JOIN patients p ON s.patient_id = p.id
-        WHERE s.doctor_id = ? AND s.applied_at IS NULL AND s.dismissed_at IS NULL
-        ORDER BY s.created_at DESC
-        LIMIT 10
-    ");
-    $stmt->execute([$user['id']]);
+    try {
+        $stmt = $pdo->prepare("\
+            SELECT s.*, u.first_name, u.last_name
+            FROM ai_suggestions s
+            JOIN patients p ON s.patient_id = p.id
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE s.doctor_id = ? AND s.applied_at IS NULL AND s.dismissed_at IS NULL
+            ORDER BY s.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$user['id']]);
+    } catch (PDOException $e) {
+        $stmt = $pdo->prepare("\
+            SELECT s.*, u.first_name, u.last_name
+            FROM ai_suggestions s
+            JOIN patients p ON s.patient_id = p.id
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE (s.suggested_by = ? OR s.suggested_by IS NULL) AND (s.accepted = 0 OR s.accepted IS NULL)
+            ORDER BY s.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([(string)($user['username'] ?? '')]);
+    }
     $recentSuggestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Get patients for dropdown
-    $patientsStmt = $pdo->query("SELECT id, first_name, last_name FROM patients ORDER BY first_name, last_name");
+    $patientsStmt = $pdo->query("\
+        SELECT p.id, u.first_name, u.last_name
+        FROM patients p
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY u.first_name, u.last_name
+    ");
     $patients = $patientsStmt->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $e) {
@@ -171,9 +218,7 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
         <div class="container">
             <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - AI Assistant</a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="dashboard.php">Dashboard</a>
-                <a class="nav-link" href="suggestions.php">Suggestions</a>
-                <a class="nav-link" href="analytics.php">Analytics</a>
+                <a class="nav-link active" href="suggestions.php">Suggestions</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
             </div>
         </div>
@@ -195,6 +240,7 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="generate_suggestion">
                             
                             <div class="row">
@@ -260,11 +306,13 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                                         <p class="mb-2"><?php echo htmlspecialchars($suggestion['suggestion_text']); ?></p>
                                         <div class="btn-group btn-group-sm">
                                             <form method="POST" style="display: inline;">
+                                                <?php echo csrfField(); ?>
                                                 <input type="hidden" name="action" value="apply_suggestion">
                                                 <input type="hidden" name="suggestion_id" value="<?php echo $suggestion['id']; ?>">
                                                 <button type="submit" class="btn btn-success">Apply</button>
                                             </form>
                                             <form method="POST" style="display: inline;">
+                                                <?php echo csrfField(); ?>
                                                 <input type="hidden" name="action" value="dismiss_suggestion">
                                                 <input type="hidden" name="suggestion_id" value="<?php echo $suggestion['id']; ?>">
                                                 <button type="submit" class="btn btn-secondary">Dismiss</button>
@@ -290,8 +338,13 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                             <span class="float-end"><?php
                                 try {
                                     $pdo = getDB();
-                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE DATE(created_at) = CURDATE() AND doctor_id = ?");
-                                    $stmt->execute([$user['id']]);
+                                    try {
+                                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE DATE(created_at) = DATE('now') AND doctor_id = ?");
+                                        $stmt->execute([$user['id']]);
+                                    } catch (PDOException $e) {
+                                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE DATE(created_at) = CURDATE() AND (suggested_by = ? OR suggested_by IS NULL)");
+                                        $stmt->execute([(string)($user['username'] ?? '')]);
+                                    }
                                     echo $stmt->fetchColumn();
                                 } catch (PDOException $e) {
                                     echo 'N/A';
@@ -303,8 +356,13 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                             <span class="float-end"><?php
                                 try {
                                     $pdo = getDB();
-                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE applied_at IS NOT NULL AND doctor_id = ?");
-                                    $stmt->execute([$user['id']]);
+                                    try {
+                                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE applied_at IS NOT NULL AND doctor_id = ?");
+                                        $stmt->execute([$user['id']]);
+                                    } catch (PDOException $e) {
+                                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_suggestions WHERE accepted = 1 AND (suggested_by = ? OR suggested_by IS NULL)");
+                                        $stmt->execute([(string)($user['username'] ?? '')]);
+                                    }
                                     echo $stmt->fetchColumn();
                                 } catch (PDOException $e) {
                                     echo 'N/A';
@@ -316,8 +374,13 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                             <span class="float-end"><?php
                                 try {
                                     $pdo = getDB();
-                                    $stmt = $pdo->prepare("SELECT AVG(confidence_score) FROM ai_suggestions WHERE doctor_id = ?");
-                                    $stmt->execute([$user['id']]);
+                                    try {
+                                        $stmt = $pdo->prepare("SELECT AVG(confidence_score) FROM ai_suggestions WHERE doctor_id = ?");
+                                        $stmt->execute([$user['id']]);
+                                    } catch (PDOException $e) {
+                                        $stmt = $pdo->prepare("SELECT AVG(confidence_score) FROM ai_suggestions WHERE (suggested_by = ? OR suggested_by IS NULL)");
+                                        $stmt->execute([(string)($user['username'] ?? '')]);
+                                    }
                                     $avg = $stmt->fetchColumn();
                                     echo $avg ? round($avg) . '%' : 'N/A';
                                 } catch (PDOException $e) {
@@ -344,9 +407,6 @@ function generateAiSuggestion($type, $patient, $consultations, $context) {
                             <button class="btn btn-outline-primary" onclick="quickSuggestion('prevention')">
                                 Prevention Counseling
                             </button>
-                            <a href="ai_training.php" class="btn btn-outline-info">
-                                AI Training Data
-                            </a>
                         </div>
                     </div>
                 </div>

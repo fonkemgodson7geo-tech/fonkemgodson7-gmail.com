@@ -13,6 +13,7 @@ $user = $_SESSION['user'];
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrf();
     $action = $_POST['action'] ?? '';
     
     try {
@@ -230,8 +231,6 @@ function runAutomatedTest($testType) {
             <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - Testing & QA</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link active" href="dashboard.php">Dashboard</a>
-                <a class="nav-link" href="test_runner.php">Test Runner</a>
-                <a class="nav-link" href="test_cases.php">Test Cases</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
             </div>
         </div>
@@ -289,6 +288,7 @@ function runAutomatedTest($testType) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="run_test">
                             
                             <div class="row">
@@ -375,6 +375,7 @@ function runAutomatedTest($testType) {
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <?php echo csrfField(); ?>
                             <input type="hidden" name="action" value="create_test_case">
                             
                             <div class="mb-3">
