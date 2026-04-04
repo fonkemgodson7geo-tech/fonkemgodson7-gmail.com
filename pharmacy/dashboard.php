@@ -20,7 +20,7 @@ if ($user['role'] === 'admin') {
         $doctor_id = $doctorStmt->fetchColumn();
         
         if ($doctor_id) {
-            $accessStmt = $pdo->prepare("SELECT id FROM pharmacy_doctors WHERE doctor_id = ?");
+            $accessStmt = $pdo->prepare("SELECT id FROM pharmacy_doctors WHERE doctor_id = ? AND doctor_id IN (SELECT doctor_id FROM pharmacy_doctors ORDER BY added_at ASC, id ASC LIMIT 2)");
             $accessStmt->execute([$doctor_id]);
             $has_pharmacy_access = (bool)$accessStmt->fetchColumn();
         }
