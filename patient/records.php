@@ -4,13 +4,21 @@ require_once '../includes/auth.php';
 
 requireRole('patient');
 
-$patient_id = $_SESSION['user']['id'];
+$patient_user_id = (int)$_SESSION['user']['id'];
+$patient_id = $patient_user_id;
 $medical_records = [];
 $error = '';
 $success = '';
 
 try {
     $pdo = getDB();
+
+    $patientStmt = $pdo->prepare('SELECT id FROM patients WHERE user_id = ? LIMIT 1');
+    $patientStmt->execute([$patient_user_id]);
+    $patientProfileId = (int)$patientStmt->fetchColumn();
+    if ($patientProfileId > 0) {
+        $patient_id = $patientProfileId;
+    }
     
     // Handle delete record
     if (isset($_POST['delete_record'])) {
@@ -21,9 +29,9 @@ try {
             // Verify this record belongs to the patient
             $verifyStmt = $pdo->prepare('SELECT patient_id FROM consultations WHERE id = ?');
             $verifyStmt->execute([$record_id]);
-            $recordPatient = $verifyStmt->fetchColumn();
+            $recordPatient = (int)$verifyStmt->fetchColumn();
             
-            if ($recordPatient === $patient_id) {
+            if ($recordPatient === (int)$patient_id) {
                 $deleteStmt = $pdo->prepare('DELETE FROM consultations WHERE id = ?');
                 $deleteStmt->execute([$record_id]);
                 $success = 'Medical record deleted successfully.';
@@ -48,9 +56,9 @@ try {
             // Verify this record belongs to the patient
             $verifyStmt = $pdo->prepare('SELECT patient_id FROM consultations WHERE id = ?');
             $verifyStmt->execute([$record_id]);
-            $recordPatient = $verifyStmt->fetchColumn();
+            $recordPatient = (int)$verifyStmt->fetchColumn();
             
-            if ($recordPatient === $patient_id) {
+            if ($recordPatient === (int)$patient_id) {
                 $updateStmt = $pdo->prepare('UPDATE consultations SET diagnosis = ?, treatment = ?, notes = ? WHERE id = ?');
                 $updateStmt->execute([$diagnosis, $treatment, $notes, $record_id]);
                 $success = 'Medical record updated successfully.';
@@ -68,7 +76,8 @@ try {
         SELECT c.id, c.consultation_date as record_date, c.diagnosis, c.treatment, c.notes, 
                u.first_name, u.last_name
         FROM consultations c
-        JOIN users u ON c.doctor_id = u.id
+        LEFT JOIN doctors d ON c.doctor_id = d.id
+        LEFT JOIN users u ON d.user_id = u.id
         WHERE c.patient_id = ?
         ORDER BY c.consultation_date DESC
     ');
@@ -253,7 +262,7 @@ try {
         <?php if (count($medical_records) > 0): ?>
             <div>
                 <?php foreach ($medical_records as $record): ?>
-                    <div class="record-card">
+                    <div class="record-card" data-record-id="<?php echo (int)$record['id']; ?>">
                         <div class="record-header">
                             <div>
                                 <div class="record-date">
@@ -357,23 +366,21 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function printRecord(recordId) {
-            const recordCard = document.querySelector(`#editModal${recordId}`).closest('.record-card') || 
-                              document.querySelectorAll('.record-card')[Array.from(document.querySelectorAll('[data-bs-target*="Modal"]'))
-                              .findIndex(el => el.id.includes(recordId))];
-            
-            // Get the record content
+            const targetRecord = document.querySelector(`.record-card[data-record-id="${recordId}"]`);
+            if (!targetRecord) {
+                return;
+            }
+
             const printContent = document.createElement('div');
             const header = document.querySelector('.page-header').cloneNode(true);
-            const records = Array.from(document.querySelectorAll('.record-card'));
-            const targetRecord = records.find(card => card.querySelector(`[data-bs-target*="Modal${recordId}"]`));
-            
-            if (targetRecord) {
-                printContent.appendChild(header);
-                const recordClone = targetRecord.cloneNode(true);
-                recordClone.querySelector('.record-actions').remove();
-                recordClone.querySelectorAll('.modal').forEach(m => m.remove());
-                printContent.appendChild(recordClone);
+            printContent.appendChild(header);
+
+            const recordClone = targetRecord.cloneNode(true);
+            const actions = recordClone.querySelector('.record-actions');
+            if (actions) {
+                actions.remove();
             }
+            printContent.appendChild(recordClone);
             
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`

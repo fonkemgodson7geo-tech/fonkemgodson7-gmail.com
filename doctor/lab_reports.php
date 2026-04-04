@@ -243,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <th>Test Name</th>
                             <th>Date</th>
                             <th>Results</th>
-                            <th>Image</th>
+                            <th>Attachment</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -277,9 +277,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 echo "</td>";
                                 echo "<td>";
                                 if (empty($report['results'])) {
-                                    echo "<button class='btn btn-sm btn-warning' onclick='editResults(" . $report['id'] . ", \"" . addslashes($report['results']) . "\")'>Add Results</button>";
+                                    echo "<button class='btn btn-sm btn-warning' data-report-id='" . (int)$report['id'] . "' data-results='" . htmlspecialchars((string)$report['results'], ENT_QUOTES, 'UTF-8') . "' onclick='openEditResultsModal(this)'>Add Results</button>";
                                 } else {
-                                    echo "<button class='btn btn-sm btn-info' onclick='editResults(" . $report['id'] . ", \"" . addslashes($report['results']) . "\")'>Edit Results</button>";
+                                    echo "<button class='btn btn-sm btn-info' data-report-id='" . (int)$report['id'] . "' data-results='" . htmlspecialchars((string)$report['results'], ENT_QUOTES, 'UTF-8') . "' onclick='openEditResultsModal(this)'>Edit Results</button>";
                                 }
                                 echo "</td>";
                                 echo "</tr>";
@@ -328,7 +328,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function editResults(reportId, currentResults) {
+        function openEditResultsModal(buttonElement) {
+            const reportId = buttonElement.getAttribute('data-report-id') || '';
+            const currentResults = buttonElement.getAttribute('data-results') || '';
             document.getElementById('edit_report_id').value = reportId;
             document.getElementById('edit_results').value = currentResults;
             new bootstrap.Modal(document.getElementById('editResultsModal')).show();
