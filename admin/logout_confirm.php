@@ -11,6 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
 
     if (($_POST['action'] ?? null) === 'confirm') {
+        writeAuditLog(
+            'admin logout',
+            'users',
+            (int)($user['id'] ?? 0),
+            ['username' => (string)($user['username'] ?? ''), 'role' => (string)($user['role'] ?? '')],
+            null
+        );
         logout();
         header('Location: login.php');
         exit;
