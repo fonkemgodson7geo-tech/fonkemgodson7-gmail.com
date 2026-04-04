@@ -27,51 +27,116 @@ try {
 
 $message = '';
 
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt', 'dcm'];
+$maxUploadSize = 15 * 1024 * 1024; // 15 MB
+
+function handleLabReportUpload(string $fieldName, array $allowedExtensions, int $maxUploadSize): ?array {
+    if (!isset($_FILES[$fieldName]) || !is_array($_FILES[$fieldName])) {
+        return null;
+    }
+
+    $file = $_FILES[$fieldName];
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return ['error' => 'File upload failed. Please try again.'];
+    }
+
+    $fileSize = (int)($file['size'] ?? 0);
+    if ($fileSize <= 0 || $fileSize > $maxUploadSize) {
+        return ['error' => 'File size must be between 1 byte and 15 MB.'];
+    }
+
+    $originalName = (string)($file['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+        return ['error' => 'Unsupported file type. Allowed: JPG, PNG, WEBP, PDF, DOC, DOCX, TXT, DCM.'];
+    }
+
+    $uploadRoot = rtrim((string)UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR;
+    $relativeDir = 'lab_reports';
+    $targetDir = $uploadRoot . $relativeDir . DIRECTORY_SEPARATOR;
+
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0755, true)) {
+        return ['error' => 'Unable to create upload directory.'];
+    }
+
+    $safeBase = preg_replace('/[^A-Za-z0-9._-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    $safeBase = trim((string)$safeBase, '._-');
+    if ($safeBase === '') {
+        $safeBase = 'attachment';
+    }
+
+    $finalName = date('Ymd_His') . '_' . bin2hex(random_bytes(5)) . '_' . $safeBase . '.' . $extension;
+    $targetPath = $targetDir . $finalName;
+
+    if (!move_uploaded_file((string)$file['tmp_name'], $targetPath)) {
+        return ['error' => 'Could not save uploaded file.'];
+    }
+
+    return ['path' => $relativeDir . '/' . $finalName];
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_report'])) {
+        verifyCsrf();
         $patient_id = $_POST['patient_id'];
         $test_name = $_POST['test_name'];
         $results = $_POST['results'];
         
         $image_path = null;
-        if (isset($_FILES['report_image']) && $_FILES['report_image']['error'] == 0) {
-            $upload_dir = UPLOAD_DIR;
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0755, true);
-            }
-            
-            $file_name = uniqid() . '_' . basename($_FILES['report_image']['name']);
-            $target_path = $upload_dir . $file_name;
-            
-            if (move_uploaded_file($_FILES['report_image']['tmp_name'], $target_path)) {
-                $image_path = $file_name;
-            }
+        $upload = handleLabReportUpload('report_file', $allowedExtensions, $maxUploadSize);
+        if (is_array($upload) && isset($upload['error'])) {
+            $message = $upload['error'];
+        } elseif (is_array($upload) && isset($upload['path'])) {
+            $image_path = $upload['path'];
         }
-        
-        try {
-            $pdo = getDB();
-            if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
-                $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, date('now'))");
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, CURDATE())");
+
+        if ($message === '') {
+            try {
+                $pdo = getDB();
+                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                    $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, date('now'))");
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, doctor_id, test_name, results, image_path, report_date) VALUES (?, ?, ?, ?, ?, CURDATE())");
+                }
+                $stmt->execute([$patient_id, $doctor_id, $test_name, $results, $image_path]);
+                $message = 'Lab report added successfully';
+            } catch (PDOException $e) {
+                error_log('Doctor add lab report error: ' . $e->getMessage());
+                $message = 'Error adding lab report';
             }
-            $stmt->execute([$patient_id, $doctor_id, $test_name, $results, $image_path]);
-            $message = 'Lab report added successfully';
-        } catch (PDOException $e) {
-            error_log('Doctor add lab report error: ' . $e->getMessage());
-            $message = 'Error adding lab report';
         }
     } elseif (isset($_POST['update_results'])) {
+        verifyCsrf();
         $report_id = $_POST['report_id'];
         $results = $_POST['results'];
+        $newAttachmentPath = null;
+
+        $upload = handleLabReportUpload('edit_report_file', $allowedExtensions, $maxUploadSize);
+        if (is_array($upload) && isset($upload['error'])) {
+            $message = $upload['error'];
+        } elseif (is_array($upload) && isset($upload['path'])) {
+            $newAttachmentPath = $upload['path'];
+        }
         
-        try {
-            $pdo = getDB();
-            $stmt = $pdo->prepare("UPDATE lab_reports SET results = ? WHERE id = ? AND doctor_id = ?");
-            $stmt->execute([$results, $report_id, $doctor_id]);
-            $message = 'Results updated successfully';
-        } catch (PDOException $e) {
-            $message = 'Error updating results';
+        if ($message === '') {
+            try {
+                $pdo = getDB();
+                if ($newAttachmentPath !== null) {
+                    $stmt = $pdo->prepare("UPDATE lab_reports SET results = ?, image_path = ? WHERE id = ? AND doctor_id = ?");
+                    $stmt->execute([$results, $newAttachmentPath, $report_id, $doctor_id]);
+                } else {
+                    $stmt = $pdo->prepare("UPDATE lab_reports SET results = ? WHERE id = ? AND doctor_id = ?");
+                    $stmt->execute([$results, $report_id, $doctor_id]);
+                }
+                $message = 'Results updated successfully';
+            } catch (PDOException $e) {
+                error_log('Doctor update lab report error: ' . $e->getMessage());
+                $message = 'Error updating results';
+            }
         }
     }
 }
@@ -104,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <h2>Lab Reports Management</h2>
         
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo $message; ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <!-- Add New Report -->
@@ -114,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
+                    <?php echo csrfField(); ?>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -153,8 +219,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <textarea class="form-control" id="results" name="results" rows="3"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label for="report_image" class="form-label">Report Image</label>
-                                <input type="file" class="form-control" id="report_image" name="report_image" accept="image/*">
+                                <label for="report_file" class="form-label">Lab Attachment (Microscope/Ecography/Scan)</label>
+                                <input type="file" class="form-control" id="report_file" name="report_file" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.txt,.dcm">
+                                <small class="text-muted">Allowed: images, PDF, DOC, DOCX, TXT, DCM (max 15 MB)</small>
                             </div>
                         </div>
                     </div>
@@ -203,9 +270,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 echo "<td>" . htmlspecialchars(substr($report['results'], 0, 50)) . (strlen($report['results']) > 50 ? '...' : '') . "</td>";
                                 echo "<td>";
                                 if ($report['image_path']) {
-                                    echo "<a href='../uploads/" . htmlspecialchars($report['image_path']) . "' target='_blank'>View</a>";
+                                    echo "<a href='../uploads/" . htmlspecialchars($report['image_path']) . "' target='_blank' rel='noopener'>Open File</a>";
                                 } else {
-                                    echo "No image";
+                                    echo "No file";
                                 }
                                 echo "</td>";
                                 echo "<td>";
@@ -236,12 +303,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <h5 class="modal-title">Edit Lab Results</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     <div class="modal-body">
+                        <?php echo csrfField(); ?>
                         <input type="hidden" name="report_id" id="edit_report_id">
                         <div class="mb-3">
                             <label for="edit_results" class="form-label">Results</label>
                             <textarea class="form-control" id="edit_results" name="results" rows="5" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_report_file" class="form-label">Replace Attachment (Optional)</label>
+                            <input type="file" class="form-control" id="edit_report_file" name="edit_report_file" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.txt,.dcm">
+                            <small class="text-muted">Leave empty to keep the current file.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
