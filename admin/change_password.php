@@ -34,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 $newHash = hashPassword($newPassword);
                 $upd = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
                 $upd->execute([$newHash, (int)$dbUser['id']]);
+                writeAuditLog(
+                    'change admin password',
+                    'users',
+                    (int)$dbUser['id'],
+                    ['username' => (string)$dbUser['username'], 'role' => (string)$dbUser['role']],
+                    ['username' => (string)$dbUser['username'], 'role' => (string)$dbUser['role'], 'password_changed' => true]
+                );
                 $message = 'Password updated successfully.';
             }
         } catch (PDOException $e) {

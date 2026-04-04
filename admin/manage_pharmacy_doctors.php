@@ -31,6 +31,14 @@ try {
             } else {
                 $stmt = $pdo->prepare("INSERT INTO pharmacy_doctors (doctor_id, added_by) VALUES (?, ?)");
                 $stmt->execute([$doctor_id, $_SESSION['user']['id']]);
+                $accessId = (int)$pdo->lastInsertId();
+                writeAuditLog(
+                    'add pharmacy doctor access',
+                    'pharmacy_doctors',
+                    $accessId,
+                    null,
+                    ['doctor_id' => $doctor_id, 'added_by' => (int)$_SESSION['user']['id']]
+                );
                 $message = 'Doctor added to pharmacy access successfully.';
                 $current_pharmacy_doctors_count++;
             }
@@ -46,8 +54,21 @@ try {
         $pharmacy_doctor_id = (int)$_POST['pharmacy_doctor_id'];
 
         try {
+            $existingStmt = $pdo->prepare("SELECT id, doctor_id, added_by, added_at FROM pharmacy_doctors WHERE id = ? LIMIT 1");
+            $existingStmt->execute([$pharmacy_doctor_id]);
+            $existingAccess = $existingStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
             $stmt = $pdo->prepare("DELETE FROM pharmacy_doctors WHERE id = ?");
             $stmt->execute([$pharmacy_doctor_id]);
+            if ($existingAccess) {
+                writeAuditLog(
+                    'remove pharmacy doctor access',
+                    'pharmacy_doctors',
+                    $pharmacy_doctor_id,
+                    $existingAccess,
+                    null
+                );
+            }
             $message = 'Doctor removed from pharmacy access.';
             if ($current_pharmacy_doctors_count > 0) {
                 $current_pharmacy_doctors_count--;

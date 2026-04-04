@@ -134,6 +134,55 @@ function verifyPassword($password, $hash) {
     return password_verify($password, $hash);
 }
 
+function _auditJsonEncode($value): ?string {
+    if ($value === null) {
+        return null;
+    }
+
+    $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    return $json === false ? null : $json;
+}
+
+function getClientIpAddress(): string {
+    $keys = ['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'];
+    foreach ($keys as $key) {
+        $value = trim((string)($_SERVER[$key] ?? ''));
+        if ($value === '') {
+            continue;
+        }
+        if ($key === 'HTTP_X_FORWARDED_FOR') {
+            $parts = array_map('trim', explode(',', $value));
+            return (string)($parts[0] ?? '');
+        }
+        return $value;
+    }
+    return '';
+}
+
+function writeAuditLog(string $action, ?string $tableName = null, ?int $recordId = null, $oldValues = null, $newValues = null): void {
+    try {
+        $pdo = getDB();
+        $userId = isLoggedIn() ? (int)($_SESSION['user_id'] ?? 0) : null;
+        if ($userId !== null && $userId <= 0) {
+            $userId = null;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO audit_logs (user_id, action, table_name, record_id, old_values, new_values, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $userId,
+            $action,
+            $tableName,
+            $recordId,
+            _auditJsonEncode($oldValues),
+            _auditJsonEncode($newValues),
+            getClientIpAddress(),
+            substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 65535),
+        ]);
+    } catch (Throwable $e) {
+        error_log('Audit log write error: ' . $e->getMessage());
+    }
+}
+
 function _sqliteTableExists(PDO $pdo, string $tableName): bool {
     $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1");
     $stmt->execute([$tableName]);
@@ -191,6 +240,20 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
         FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE,
         FOREIGN KEY (added_by) REFERENCES users(id),
         UNIQUE(doctor_id)
+    )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        action TEXT NOT NULL,
+        table_name TEXT,
+        record_id INTEGER,
+        old_values TEXT,
+        new_values TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
     )");
 }
 

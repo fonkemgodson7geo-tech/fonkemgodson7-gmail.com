@@ -2,12 +2,7 @@
 require_once '../config/config.php';
 require_once '../includes/auth.php';
 
-requireLogin();
-
-if (($_SESSION['user']['role'] ?? '') !== 'admin') {
-    header('Location: ../index.php');
-    exit;
-}
+requireDesignatedAdmin();
 
 $user = $_SESSION['user'];
 
