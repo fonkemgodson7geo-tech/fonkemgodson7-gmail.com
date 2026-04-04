@@ -9,22 +9,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    try {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND role = 'admin'");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (strcasecmp($username, ADMIN_LOGIN_USERNAME) !== 0) {
+        $message = 'Access denied. This portal is restricted to the designated admin account.';
+    } else {
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND role = 'admin' LIMIT 1");
+            $stmt->execute([ADMIN_LOGIN_USERNAME]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && verifyPassword($password, $user['password'])) {
-            loginUser($user);
-            header('Location: dashboard.php');
-            exit;
-        } else {
-            $message = 'Invalid credentials';
+            if ($user && verifyPassword($password, $user['password'])) {
+                loginUser($user);
+                header('Location: dashboard.php');
+                exit;
+            } else {
+                $message = 'Invalid credentials';
+            }
+        } catch (PDOException $e) {
+            error_log('Admin login DB error: ' . $e->getMessage());
+            $message = 'A system error occurred. Please try again.';
         }
-    } catch (PDOException $e) {
-        error_log('Admin login DB error: ' . $e->getMessage());
-        $message = 'A system error occurred. Please try again.';
     }
 }
 ?>
