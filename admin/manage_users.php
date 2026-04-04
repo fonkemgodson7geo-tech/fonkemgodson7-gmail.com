@@ -25,10 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
 
             if ($targetUsername !== '' && strcasecmp($targetUsername, ADMIN_LOGIN_USERNAME) === 0 && $role !== 'admin') {
                 $error = 'The designated admin account cannot be changed to another role.';
+            } elseif ($role === 'admin' && ($targetUsername === '' || strcasecmp($targetUsername, ADMIN_LOGIN_USERNAME) !== 0)) {
+                $error = 'Only the designated admin account can have admin role.';
             } else {
-            $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
-            $stmt->execute([$role, $userId]);
-            $message = 'User role updated successfully.';
+                $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
+                $stmt->execute([$role, $userId]);
+                $message = 'User role updated successfully.';
             }
         } catch (PDOException $e) {
             error_log('Manage users update role error: ' . $e->getMessage());
@@ -119,6 +121,7 @@ try {
                                             <input type="hidden" name="user_id" value="<?php echo (int)$u['id']; ?>">
                                             <select name="role" class="form-select form-select-sm">
                                                 <?php foreach (['patient', 'doctor', 'admin', 'staff', 'intern', 'trainee'] as $r): ?>
+                                                    <?php if ($r === 'admin' && strcasecmp((string)$u['username'], ADMIN_LOGIN_USERNAME) !== 0) { continue; } ?>
                                                     <option value="<?php echo htmlspecialchars($r, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $u['role'] === $r ? 'selected' : ''; ?>>
                                                         <?php echo htmlspecialchars(ucfirst($r), ENT_QUOTES, 'UTF-8'); ?>
                                                     </option>
