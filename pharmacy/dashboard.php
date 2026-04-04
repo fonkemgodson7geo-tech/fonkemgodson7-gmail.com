@@ -4,32 +4,60 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'staff'])) {
+$user = $_SESSION['user'];
+
+// Access control: Only admin and authorized doctors
+$has_pharmacy_access = false;
+if ($user['role'] === 'admin') {
+    $has_pharmacy_access = true;
+} elseif ($user['role'] === 'doctor') {
+    // Check if doctor has pharmacy access
+    try {
+        $pdo = getDB();
+        // Get doctor profile ID
+        $doctorStmt = $pdo->prepare("SELECT id FROM doctors WHERE user_id = ?");
+        $doctorStmt->execute([$user['id']]);
+        $doctor_id = $doctorStmt->fetchColumn();
+        
+        if ($doctor_id) {
+            $accessStmt = $pdo->prepare("SELECT id FROM pharmacy_doctors WHERE doctor_id = ?");
+            $accessStmt->execute([$doctor_id]);
+            $has_pharmacy_access = (bool)$accessStmt->fetchColumn();
+        }
+    } catch (PDOException $e) {
+        error_log('Pharmacy access check error: ' . $e->getMessage());
+    }
+}
+
+if (!$has_pharmacy_access) {
     header('Location: ../index.php');
     exit;
 }
-
-$user = $_SESSION['user'];
 
 $message = '';
 
 if (isset($_POST['add_medication'])) {
     verifyCsrf();
-
-    $medication_name = $_POST['medication_name'];
-    $quantity = $_POST['quantity'];
-    $unit_price = $_POST['unit_price'];
-    $expiry_date = $_POST['expiry_date'];
-    $min_stock = $_POST['min_stock_level'];
     
-    try {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("INSERT INTO pharmacy_inventory (medication_name, quantity, unit_price, expiry_date, min_stock_level) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$medication_name, $quantity, $unit_price, $expiry_date, $min_stock]);
-        $message = 'Medication added successfully';
-    } catch (PDOException $e) {
-        error_log('Pharmacy dashboard add medication error: ' . $e->getMessage());
-        $message = 'Error adding medication. Please try again.';
+    // Only admin can add medication
+    if ($user['role'] !== 'admin') {
+        $message = 'Only administrators can add medications.';
+    } else {
+        $medication_name = $_POST['medication_name'];
+        $quantity = $_POST['quantity'];
+        $unit_price = $_POST['unit_price'];
+        $expiry_date = $_POST['expiry_date'];
+        $min_stock = $_POST['min_stock_level'];
+        
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("INSERT INTO pharmacy_inventory (medication_name, quantity, unit_price, expiry_date, min_stock_level) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$medication_name, $quantity, $unit_price, $expiry_date, $min_stock]);
+            $message = 'Medication added successfully';
+        } catch (PDOException $e) {
+            error_log('Pharmacy dashboard add medication error: ' . $e->getMessage());
+            $message = 'Error adding medication. Please try again.';
+        }
     }
 }
 ?>
@@ -139,7 +167,8 @@ if (isset($_POST['add_medication'])) {
             </div>
         </div>
 
-        <!-- Add Medication -->
+        <!-- Add Medication - Admin Only -->
+        <?php if ($user['role'] === 'admin'): ?>
         <div class="card mt-4">
             <div class="card-header">
                 <h5>Add New Medication</h5>
@@ -177,6 +206,11 @@ if (isset($_POST['add_medication'])) {
                 </form>
             </div>
         </div>
+        <?php else: ?>
+        <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle"></i> Only administrators can add new medications. You have read-only access to manage pharmacy inventory.
+        </div>
+        <?php endif; ?>
 
         <!-- Low Stock Alert -->
         <div class="card mt-4">

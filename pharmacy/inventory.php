@@ -4,7 +4,32 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
-if (!in_array($_SESSION['user']['role'], ['admin', 'doctor', 'staff'])) {
+$user = $_SESSION['user'];
+
+// Access control: Only admin and authorized doctors
+$has_pharmacy_access = false;
+if ($user['role'] === 'admin') {
+    $has_pharmacy_access = true;
+} elseif ($user['role'] === 'doctor') {
+    // Check if doctor has pharmacy access
+    try {
+        $pdo = getDB();
+        // Get doctor profile ID
+        $doctorStmt = $pdo->prepare("SELECT id FROM doctors WHERE user_id = ?");
+        $doctorStmt->execute([$user['id']]);
+        $doctor_id = $doctorStmt->fetchColumn();
+        
+        if ($doctor_id) {
+            $accessStmt = $pdo->prepare("SELECT id FROM pharmacy_doctors WHERE doctor_id = ?");
+            $accessStmt->execute([$doctor_id]);
+            $has_pharmacy_access = (bool)$accessStmt->fetchColumn();
+        }
+    } catch (PDOException $e) {
+        error_log('Pharmacy access check error: ' . $e->getMessage());
+    }
+}
+
+if (!$has_pharmacy_access) {
     header('Location: ../index.php');
     exit;
 }
@@ -13,18 +38,23 @@ $message = '';
 
 if (isset($_POST['update_stock'])) {
     verifyCsrf();
-
-    $id = $_POST['id'];
-    $quantity = $_POST['quantity'];
     
-    try {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-        $stmt->execute([$quantity, $id]);
-        $message = 'Stock updated successfully';
-    } catch (PDOException $e) {
-        error_log('Pharmacy inventory update stock error: ' . $e->getMessage());
-        $message = 'Error updating stock';
+    // Only admin can update stock
+    if ($user['role'] !== 'admin') {
+        $message = 'Only administrators can update stock.';
+    } else {
+        $id = $_POST['id'];
+        $quantity = $_POST['quantity'];
+        
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([$quantity, $id]);
+            $message = 'Stock updated successfully';
+        } catch (PDOException $e) {
+            error_log('Pharmacy inventory update stock error: ' . $e->getMessage());
+            $message = 'Error updating stock';
+        }
     }
 }
 ?>
@@ -104,7 +134,11 @@ if (isset($_POST['update_stock'])) {
                                 echo "<td>$" . number_format($item['unit_price'], 2) . "</td>";
                                 echo "<td><span class='badge bg-{$badge_class}'>{$status}" . ($expiry_status ? " / {$expiry_status}" : "") . "</span></td>";
                                 echo "<td>";
-                                echo "<button class='btn btn-sm btn-primary' onclick='updateStock(" . $item['id'] . ", " . $item['quantity'] . ")'>Update Stock</button>";
+                                if ($_SESSION['user']['role'] === 'admin') {
+                                    echo "<button class='btn btn-sm btn-primary' onclick='updateStock(" . $item['id'] . ", " . $item['quantity'] . ")'>Update Stock</button>";
+                                } else {
+                                    echo "<span class='text-muted'>View Only</span>";
+                                }
                                 echo "</td>";
                                 echo "</tr>";
                             }

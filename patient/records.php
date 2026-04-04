@@ -7,9 +7,61 @@ requireRole('patient');
 $patient_id = $_SESSION['user']['id'];
 $medical_records = [];
 $error = '';
+$success = '';
 
 try {
     $pdo = getDB();
+    
+    // Handle delete record
+    if (isset($_POST['delete_record'])) {
+        verifyCsrf();
+        $record_id = (int)$_POST['record_id'];
+        
+        try {
+            // Verify this record belongs to the patient
+            $verifyStmt = $pdo->prepare('SELECT patient_id FROM consultations WHERE id = ?');
+            $verifyStmt->execute([$record_id]);
+            $recordPatient = $verifyStmt->fetchColumn();
+            
+            if ($recordPatient === $patient_id) {
+                $deleteStmt = $pdo->prepare('DELETE FROM consultations WHERE id = ?');
+                $deleteStmt->execute([$record_id]);
+                $success = 'Medical record deleted successfully.';
+            } else {
+                $error = 'Unauthorized to delete this record.';
+            }
+        } catch (PDOException $e) {
+            error_log('Delete record error: ' . $e->getMessage());
+            $error = 'Error deleting record.';
+        }
+    }
+    
+    // Handle edit record
+    if (isset($_POST['edit_record'])) {
+        verifyCsrf();
+        $record_id = (int)$_POST['record_id'];
+        $diagnosis = $_POST['diagnosis'] ?? '';
+        $treatment = $_POST['treatment'] ?? '';
+        $notes = $_POST['notes'] ?? '';
+        
+        try {
+            // Verify this record belongs to the patient
+            $verifyStmt = $pdo->prepare('SELECT patient_id FROM consultations WHERE id = ?');
+            $verifyStmt->execute([$record_id]);
+            $recordPatient = $verifyStmt->fetchColumn();
+            
+            if ($recordPatient === $patient_id) {
+                $updateStmt = $pdo->prepare('UPDATE consultations SET diagnosis = ?, treatment = ?, notes = ? WHERE id = ?');
+                $updateStmt->execute([$diagnosis, $treatment, $notes, $record_id]);
+                $success = 'Medical record updated successfully.';
+            } else {
+                $error = 'Unauthorized to edit this record.';
+            }
+        } catch (PDOException $e) {
+            error_log('Edit record error: ' . $e->getMessage());
+            $error = 'Error updating record.';
+        }
+    }
     
     // Get medical records (consultations with doctor info and diagnoses)
     $stmt = $pdo->prepare('
@@ -135,6 +187,32 @@ try {
             background-color: #f8d7da;
             color: #721c24;
         }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .record-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        .record-actions .btn {
+            font-size: 0.85rem;
+            padding: 0.375rem 0.75rem;
+        }
+        @media print {
+            .navbar, .page-header p, .record-actions, .sidebar {
+                display: none;
+            }
+            .record-card {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
     </style>
 </head>
 <body>
@@ -166,6 +244,10 @@ try {
 
         <?php if ($error): ?>
             <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+        
+        <?php if ($success): ?>
+            <div class="alert alert-success"><i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <?php if (count($medical_records) > 0): ?>
@@ -203,6 +285,58 @@ try {
                                 <div class="record-value"><?php echo htmlspecialchars($record['notes'], ENT_QUOTES, 'UTF-8'); ?></div>
                             </div>
                         <?php endif; ?>
+                        
+                        <!-- Action Buttons -->
+                        <div class="record-actions">
+                            <button class="btn btn-sm btn-primary" onclick="printRecord(<?php echo $record['id']; ?>)">
+                                <i class="bi bi-printer"></i> Print
+                            </button>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal<?php echo $record['id']; ?>">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <form method="POST" style="display:inline;">
+                                <?php echo csrfField(); ?>
+                                <input type="hidden" name="record_id" value="<?php echo $record['id']; ?>">
+                                <button type="submit" name="delete_record" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Are you sure you want to delete this record?')">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="editModal<?php echo $record['id']; ?>" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Edit Medical Record</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST">
+                                    <?php echo csrfField(); ?>
+                                    <input type="hidden" name="record_id" value="<?php echo $record['id']; ?>">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="diagnosis<?php echo $record['id']; ?>" class="form-label">Diagnosis</label>
+                                            <textarea class="form-control" id="diagnosis<?php echo $record['id']; ?>" name="diagnosis" rows="3"><?php echo htmlspecialchars($record['diagnosis'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="treatment<?php echo $record['id']; ?>" class="form-label">Treatment</label>
+                                            <textarea class="form-control" id="treatment<?php echo $record['id']; ?>" name="treatment" rows="3"><?php echo htmlspecialchars($record['treatment'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notes<?php echo $record['id']; ?>" class="form-label">Additional Notes</label>
+                                            <textarea class="form-control" id="notes<?php echo $record['id']; ?>" name="notes" rows="3"><?php echo htmlspecialchars($record['notes'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" name="edit_record" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -221,5 +355,49 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <script>
+        function printRecord(recordId) {
+            const recordCard = document.querySelector(`#editModal${recordId}`).closest('.record-card') || 
+                              document.querySelectorAll('.record-card')[Array.from(document.querySelectorAll('[data-bs-target*="Modal"]'))
+                              .findIndex(el => el.id.includes(recordId))];
+            
+            // Get the record content
+            const printContent = document.createElement('div');
+            const header = document.querySelector('.page-header').cloneNode(true);
+            const records = Array.from(document.querySelectorAll('.record-card'));
+            const targetRecord = records.find(card => card.querySelector(`[data-bs-target*="Modal${recordId}"]`));
+            
+            if (targetRecord) {
+                printContent.appendChild(header);
+                const recordClone = targetRecord.cloneNode(true);
+                recordClone.querySelector('.record-actions').remove();
+                recordClone.querySelectorAll('.modal').forEach(m => m.remove());
+                printContent.appendChild(recordClone);
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Medical Record</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
+                        .page-header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 20px; margin-bottom: 20px; }
+                        .record-card { border-left: 4px solid #007bff; padding: 15px; background: white; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    ${printContent.innerHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        }
+    </script>

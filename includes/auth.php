@@ -165,6 +165,16 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS pharmacy_doctors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        doctor_id INTEGER NOT NULL,
+        added_by INTEGER,
+        added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE,
+        FOREIGN KEY (added_by) REFERENCES users(id),
+        UNIQUE(doctor_id)
+    )");
 }
 
 // Function to get PDO connection
