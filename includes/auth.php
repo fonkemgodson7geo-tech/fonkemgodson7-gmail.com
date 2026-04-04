@@ -123,48 +123,47 @@ function _sqliteTableExists(PDO $pdo, string $tableName): bool {
 }
 
 function _sqliteEnsureIdentitySchema(PDO $pdo): void {
-    if (_sqliteTableExists($pdo, 'users') && _sqliteTableExists($pdo, 'doctors')) {
-        return;
+    $hasCoreIdentity = _sqliteTableExists($pdo, 'users') && _sqliteTableExists($pdo, 'doctors');
+    if (!$hasCoreIdentity) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            role TEXT NOT NULL CHECK (role IN ('patient', 'doctor', 'admin', 'staff', 'intern', 'trainee', 'pharmacist', 'nurse', 'manager', 'compliance_officer', 'qa_tester', 'developer', 'translator')),
+            first_name TEXT,
+            last_name TEXT,
+            phone TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            medical_record_number TEXT UNIQUE,
+            date_of_birth DATE,
+            gender TEXT CHECK (gender IN ('male', 'female', 'other')),
+            address TEXT,
+            emergency_contact TEXT,
+            emergency_phone TEXT,
+            blood_type TEXT,
+            allergies TEXT,
+            medical_history TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS doctors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            specialization TEXT,
+            license_number TEXT,
+            availability TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )");
     }
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('patient', 'doctor', 'admin', 'staff', 'intern', 'trainee', 'pharmacist', 'nurse', 'manager', 'compliance_officer', 'qa_tester', 'developer', 'translator')),
-        first_name TEXT,
-        last_name TEXT,
-        phone TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS patients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        medical_record_number TEXT UNIQUE,
-        date_of_birth DATE,
-        gender TEXT CHECK (gender IN ('male', 'female', 'other')),
-        address TEXT,
-        emergency_contact TEXT,
-        emergency_phone TEXT,
-        blood_type TEXT,
-        allergies TEXT,
-        medical_history TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS doctors (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        specialization TEXT,
-        license_number TEXT,
-        availability TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS pharmacy_doctors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

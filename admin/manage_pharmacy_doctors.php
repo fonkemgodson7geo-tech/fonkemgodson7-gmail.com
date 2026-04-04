@@ -7,9 +7,13 @@ requireRole('admin');
 
 $message = '';
 $error = '';
+$max_pharmacy_doctors = 2;
 
 try {
     $pdo = getDB();
+
+    $countStmt = $pdo->query('SELECT COUNT(*) FROM pharmacy_doctors');
+    $current_pharmacy_doctors_count = (int)$countStmt->fetchColumn();
 
     // Handle adding doctor to pharmacy
     if (isset($_POST['add_pharmacy_doctor'])) {
@@ -22,10 +26,13 @@ try {
             $checkStmt->execute([$doctor_id]);
             if ($checkStmt->fetchColumn()) {
                 $error = 'This doctor already has pharmacy access.';
+            } elseif ($current_pharmacy_doctors_count >= $max_pharmacy_doctors) {
+                $error = 'Only two doctors can have pharmacy access at a time. Remove one first.';
             } else {
                 $stmt = $pdo->prepare("INSERT INTO pharmacy_doctors (doctor_id, added_by) VALUES (?, ?)");
                 $stmt->execute([$doctor_id, $_SESSION['user']['id']]);
                 $message = 'Doctor added to pharmacy access successfully.';
+                $current_pharmacy_doctors_count++;
             }
         } catch (PDOException $e) {
             error_log('Add pharmacy doctor error: ' . $e->getMessage());
@@ -42,6 +49,9 @@ try {
             $stmt = $pdo->prepare("DELETE FROM pharmacy_doctors WHERE id = ?");
             $stmt->execute([$pharmacy_doctor_id]);
             $message = 'Doctor removed from pharmacy access.';
+            if ($current_pharmacy_doctors_count > 0) {
+                $current_pharmacy_doctors_count--;
+            }
         } catch (PDOException $e) {
             error_log('Remove pharmacy doctor error: ' . $e->getMessage());
             $error = 'Error removing doctor from pharmacy.';
@@ -163,7 +173,7 @@ try {
                         <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add Doctor to Pharmacy</h5>
                     </div>
                     <div class="card-body">
-                        <?php if (!empty($available_doctors)): ?>
+                        <?php if (!empty($available_doctors) && $current_pharmacy_doctors_count < $max_pharmacy_doctors): ?>
                             <form method="POST">
                                 <?php echo csrfField(); ?>
                                 <div class="mb-3">
@@ -184,6 +194,10 @@ try {
                                     <i class="bi bi-plus-lg"></i> Add to Pharmacy
                                 </button>
                             </form>
+                        <?php elseif ($current_pharmacy_doctors_count >= $max_pharmacy_doctors): ?>
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-shield-lock"></i> Access limit reached: only 2 doctors can use pharmacy/inventory.
+                            </div>
                         <?php else: ?>
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle"></i> All doctors have been added to pharmacy access.
@@ -203,8 +217,8 @@ try {
                         <div class="row text-center">
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded">
-                                    <h3 class="text-success"><?php echo count($pharmacy_doctors); ?></h3>
-                                    <p class="mb-0 text-muted">Doctors With Access</p>
+                                    <h3 class="text-success"><?php echo count($pharmacy_doctors); ?> / <?php echo $max_pharmacy_doctors; ?></h3>
+                                    <p class="mb-0 text-muted">Doctors With Access (Max 2)</p>
                                 </div>
                             </div>
                             <div class="col-md-6">

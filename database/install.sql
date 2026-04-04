@@ -231,6 +231,16 @@ CREATE TABLE prescriptions_fulfilled (
     FOREIGN KEY (dispensed_by) REFERENCES users(id)
 );
 
+CREATE TABLE pharmacy_doctors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    doctor_id INT NOT NULL,
+    added_by INT,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_pharmacy_doctor (doctor_id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE,
+    FOREIGN KEY (added_by) REFERENCES users(id)
+);
+
 -- Business Intelligence and Reporting
 CREATE TABLE reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
