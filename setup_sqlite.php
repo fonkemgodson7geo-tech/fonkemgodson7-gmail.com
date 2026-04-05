@@ -555,7 +555,7 @@ CREATE TABLE medication_categories (
 
 -- Insert default admin user
 INSERT INTO users (username, password, email, role, first_name, last_name) VALUES
-('fonkemgodson', '\$2y\$12\$xd/DoVTXkuSTI0UzD7lfQuCjJXTOmxmsPyAM3UEEworY8R1TjUNMa', 'admin@clinic.com', 'admin', 'Admin', 'User');
+('admie', '\$2y\$12\$xd/DoVTXkuSTI0UzD7lfQuCjJXTOmxmsPyAM3UEEworY8R1TjUNMa', 'admin@clinic.com', 'admin', 'Admin', 'User');
 
 -- Insert sample doctor
 INSERT INTO users (username, password, email, role, first_name, last_name, phone) VALUES

@@ -20,3 +20,5 @@ services:
         value: "+237678612733"
       - key: ENCRYPTION_KEY
         generateValue: true
+      - key: ADMIN_LOGIN_USERNAME
+        value: admie
