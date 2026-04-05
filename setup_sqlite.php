@@ -292,6 +292,38 @@ CREATE TABLE prescriptions_fulfilled (
     FOREIGN KEY (dispensed_by) REFERENCES users(id)
 );
 
+CREATE TABLE pharmacy_sales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prescription_id INTEGER,
+    patient_id INTEGER,
+    inventory_id INTEGER,
+    quantity_sold INTEGER NOT NULL,
+    unit_price REAL NOT NULL DEFAULT 0,
+    total_amount REAL NOT NULL DEFAULT 0,
+    payment_status TEXT NOT NULL DEFAULT 'unpaid' CHECK (payment_status IN ('paid', 'unpaid', 'partial')),
+    has_debt INTEGER NOT NULL DEFAULT 1,
+    sold_by INTEGER,
+    sold_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    note TEXT,
+    FOREIGN KEY (prescription_id) REFERENCES prescriptions(id),
+    FOREIGN KEY (patient_id) REFERENCES patients(id),
+    FOREIGN KEY (inventory_id) REFERENCES pharmacy_inventory(id),
+    FOREIGN KEY (sold_by) REFERENCES users(id)
+);
+
+CREATE TABLE shift_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL CHECK (event_type IN ('sign_in', 'sign_out', 'shift_change', 'shift_swap')),
+    event_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    shift_date DATE,
+    partner_user_id INTEGER,
+    note TEXT,
+    status TEXT DEFAULT 'recorded' CHECK (status IN ('recorded', 'requested', 'approved', 'rejected')),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (partner_user_id) REFERENCES users(id)
+);
+
 -- Business Intelligence and Reporting
 CREATE TABLE reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

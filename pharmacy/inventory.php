@@ -97,6 +97,8 @@ if (isset($_POST['update_stock'])) {
                             <th>Expiry</th>
                             <th>Quantity</th>
                             <th>Unit Price</th>
+                            <th>Sold</th>
+                            <th>Sales Amount</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -105,7 +107,7 @@ if (isset($_POST['update_stock'])) {
                         <?php
                         try {
                             $pdo = getDB();
-                            $stmt = $pdo->query("SELECT * FROM pharmacy_inventory ORDER BY medication_name");
+                            $stmt = $pdo->query("SELECT pi.*, COALESCE(SUM(ps.quantity_sold), 0) AS sold_qty, COALESCE(SUM(ps.total_amount), 0) AS sold_amount FROM pharmacy_inventory pi LEFT JOIN pharmacy_sales ps ON ps.inventory_id = pi.id GROUP BY pi.id ORDER BY pi.medication_name");
                             $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             
                             foreach ($inventory as $item) {
@@ -132,6 +134,8 @@ if (isset($_POST['update_stock'])) {
                                 echo "<td>" . ($item['expiry_date'] ? htmlspecialchars($item['expiry_date']) : 'N/A') . "</td>";
                                 echo "<td>" . $item['quantity'] . "</td>";
                                 echo "<td>$" . number_format($item['unit_price'], 2) . "</td>";
+                                echo "<td>" . (int)($item['sold_qty'] ?? 0) . "</td>";
+                                echo "<td>$" . number_format((float)($item['sold_amount'] ?? 0), 2) . "</td>";
                                 echo "<td><span class='badge bg-{$badge_class}'>{$status}" . ($expiry_status ? " / {$expiry_status}" : "") . "</span></td>";
                                 echo "<td>";
                                 if ($_SESSION['user']['role'] === 'admin') {
@@ -144,7 +148,7 @@ if (isset($_POST['update_stock'])) {
                             }
                         } catch (PDOException $e) {
                             error_log('Pharmacy inventory list error: ' . $e->getMessage());
-                            echo "<tr><td colspan='7'>Database error</td></tr>";
+                            echo "<tr><td colspan='9'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>

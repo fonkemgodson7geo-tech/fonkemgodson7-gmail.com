@@ -60,13 +60,19 @@ try {
             <form method="post" class="w-100 mt-2">
                 <?php echo csrfField(); ?>
                 <div class="row g-2 align-items-end">
-                    <div class="col-md-7">
+                    <div class="col-md-5">
                         <label for="shift_note" class="form-label mb-1">End-of-shift note (optional)</label>
                         <input class="form-control form-control-sm" id="shift_note" name="shift_note" value="<?php echo htmlspecialchars((string)($todayShift['notes'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" placeholder="Handover note">
                     </div>
-                    <div class="col-md-5 d-flex gap-2">
+                    <div class="col-md-3">
+                        <label for="shift_partner_username" class="form-label mb-1">Swap With</label>
+                        <input class="form-control form-control-sm" id="shift_partner_username" name="shift_partner_username" placeholder="username">
+                    </div>
+                    <div class="col-md-4 d-flex flex-wrap gap-2">
                         <button class="btn btn-success btn-sm" type="submit" name="shift_action" value="sign_in">Sign In</button>
                         <button class="btn btn-danger btn-sm" type="submit" name="shift_action" value="sign_out">Sign Out</button>
+                        <button class="btn btn-warning btn-sm" type="submit" name="shift_action" value="shift_change">Shift Change</button>
+                        <button class="btn btn-primary btn-sm" type="submit" name="shift_action" value="shift_swap">Shift Swap</button>
                     </div>
                 </div>
             </form>

@@ -17,33 +17,72 @@ $message = '';
 if (isset($_POST['dispense_medication'])) {
     verifyCsrf();
 
-    $prescription_id = $_POST['prescription_id'];
-    $inventory_id = $_POST['inventory_id'];
-    $quantity = $_POST['quantity'];
-    $notes = $_POST['notes'];
+    $prescription_id = (int)($_POST['prescription_id'] ?? 0);
+    $inventory_id = (int)($_POST['inventory_id'] ?? 0);
+    $quantity = (int)($_POST['quantity'] ?? 0);
+    $notes = trim((string)($_POST['notes'] ?? ''));
+    $payment_status = (string)($_POST['payment_status'] ?? 'unpaid');
+    if (!in_array($payment_status, ['paid', 'unpaid', 'partial'], true)) {
+        $payment_status = 'unpaid';
+    }
     
     try {
         $pdo = getDB();
-        
-        // Check if enough stock
-        $stmt = $pdo->prepare("SELECT quantity FROM pharmacy_inventory WHERE id = ?");
-        $stmt->execute([$inventory_id]);
-        $current_stock = $stmt->fetchColumn();
-        
-        if ($current_stock >= $quantity) {
-            // Update inventory
-            $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = quantity - ? WHERE id = ?");
-            $stmt->execute([$quantity, $inventory_id]);
-            
-            // Record dispense
-            $stmt = $pdo->prepare("INSERT INTO prescriptions_fulfilled (prescription_id, inventory_id, quantity_dispensed, dispensed_by, notes) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$prescription_id, $inventory_id, $quantity, $user_id, $notes]);
-            
-            $message = 'Medication dispensed successfully';
+
+        $rxStmt = $pdo->prepare("SELECT c.patient_id FROM prescriptions pr JOIN consultations c ON pr.consultation_id = c.id WHERE pr.id = ? LIMIT 1");
+        $rxStmt->execute([$prescription_id]);
+        $patient_id = (int)$rxStmt->fetchColumn();
+
+        if ($patient_id <= 0 || $quantity <= 0 || $inventory_id <= 0) {
+            $message = 'Invalid dispense request.';
         } else {
-            $message = 'Insufficient stock available';
+            // Check stock and selling price
+            $stmt = $pdo->prepare("SELECT quantity, COALESCE(unit_price, 0) AS unit_price FROM pharmacy_inventory WHERE id = ?");
+            $stmt->execute([$inventory_id]);
+            $stockRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            if (!$stockRow) {
+                $message = 'Inventory item not found.';
+            } else {
+                $current_stock = (int)$stockRow['quantity'];
+                $unit_price = (float)$stockRow['unit_price'];
+
+                if ($current_stock >= $quantity) {
+                    $total_amount = $unit_price * $quantity;
+                    $has_debt = $payment_status === 'paid' ? 0 : 1;
+
+                    $pdo->beginTransaction();
+
+                    // Update inventory
+                    $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = quantity - ? WHERE id = ?");
+                    $stmt->execute([$quantity, $inventory_id]);
+
+                    // Record dispense
+                    $stmt = $pdo->prepare("INSERT INTO prescriptions_fulfilled (prescription_id, inventory_id, quantity_dispensed, dispensed_by, notes) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$prescription_id, $inventory_id, $quantity, $user_id, $notes !== '' ? $notes : null]);
+
+                    // Record sale and debt status
+                    $saleStmt = $pdo->prepare("INSERT INTO pharmacy_sales (prescription_id, patient_id, inventory_id, quantity_sold, unit_price, total_amount, payment_status, has_debt, sold_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $saleStmt->execute([$prescription_id, $patient_id, $inventory_id, $quantity, $unit_price, $total_amount, $payment_status, $has_debt, $user_id, $notes !== '' ? $notes : null]);
+
+                    // Also mirror to payments table so debt can be tracked globally
+                    $payStatus = $payment_status === 'paid' ? 'completed' : 'pending';
+                    $txid = 'PHARM-' . date('YmdHis') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                    $payStmt = $pdo->prepare("INSERT INTO payments (patient_id, amount, payment_method, transaction_id, status) VALUES (?, ?, ?, ?, ?)");
+                    $payStmt->execute([$patient_id, $total_amount, 'pharmacy', $txid, $payStatus]);
+
+                    $pdo->commit();
+
+                    $message = $has_debt ? 'Medication dispensed and debt recorded.' : 'Medication dispensed and marked as paid.';
+                } else {
+                    $message = 'Insufficient stock available';
+                }
+            }
         }
     } catch (PDOException $e) {
+        if (isset($pdo) && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log('Pharmacy dispense medication error: ' . $e->getMessage());
         $message = 'Error dispensing medication. Please try again.';
     }
@@ -91,6 +130,7 @@ if (isset($_POST['dispense_medication'])) {
                             <th>Medication</th>
                             <th>Dosage</th>
                             <th>Quantity</th>
+                            <th>Debt</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -99,8 +139,9 @@ if (isset($_POST['dispense_medication'])) {
                         <?php
                         try {
                             $pdo = getDB();
-                            $stmt = $pdo->prepare("
-                                SELECT p.*, pr.*, u.first_name, u.last_name, c.created_at as consultation_date
+                            $stmt = $pdo->prepare(" 
+                                SELECT p.*, pr.*, u.first_name, u.last_name, c.created_at as consultation_date, c.patient_id,
+                                       (SELECT COALESCE(SUM(pay.amount), 0) FROM payments pay WHERE pay.patient_id = c.patient_id AND pay.status = 'pending') AS pending_debt
                                 FROM prescriptions pr
                                 JOIN consultations c ON pr.consultation_id = c.id
                                 JOIN patients p ON c.patient_id = p.id
@@ -118,13 +159,19 @@ if (isset($_POST['dispense_medication'])) {
                                 echo "<td>" . htmlspecialchars($prescription['medication']) . "</td>";
                                 echo "<td>" . htmlspecialchars($prescription['dosage']) . "</td>";
                                 echo "<td>" . htmlspecialchars($prescription['quantity'] ?: 'Not specified') . "</td>";
+                                $pendingDebt = (float)($prescription['pending_debt'] ?? 0);
+                                if ($pendingDebt > 0) {
+                                    echo "<td><span class='badge bg-danger'>Debt: $" . number_format($pendingDebt, 2) . "</span></td>";
+                                } else {
+                                    echo "<td><span class='badge bg-success'>No Debt</span></td>";
+                                }
                                 echo "<td><span class='badge bg-warning'>Pending</span></td>";
                                 echo "<td><button class='btn btn-sm btn-success' onclick='dispenseMedication(" . $prescription['id'] . ", \"" . addslashes($prescription['medication']) . "\")'>Dispense</button></td>";
                                 echo "</tr>";
                             }
                         } catch (PDOException $e) {
                             error_log('Pharmacy dispense pending prescriptions error: ' . $e->getMessage());
-                            echo "<tr><td colspan='6'>Database error</td></tr>";
+                            echo "<tr><td colspan='7'>Database error</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -170,6 +217,15 @@ if (isset($_POST['dispense_medication'])) {
                         <div class="mb-3">
                             <label for="quantity" class="form-label">Quantity to Dispense</label>
                             <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_status" class="form-label">Payment Status</label>
+                            <select class="form-control" id="payment_status" name="payment_status" required>
+                                <option value="unpaid" selected>Unpaid (create debt)</option>
+                                <option value="partial">Partial (remaining debt)</option>
+                                <option value="paid">Paid</option>
+                            </select>
                         </div>
                         
                         <div class="mb-3">

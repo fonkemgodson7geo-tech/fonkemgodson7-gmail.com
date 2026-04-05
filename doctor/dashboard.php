@@ -345,9 +345,20 @@ try {
                                     value="<?php echo htmlspecialchars((string)($todayShift['notes'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                 >
                             </div>
-                            <div class="col-md-6 d-flex gap-2">
+                            <div class="col-md-3">
+                                <label for="shift_partner_username" class="form-label mb-1">Swap With (username)</label>
+                                <input
+                                    class="form-control form-control-sm"
+                                    id="shift_partner_username"
+                                    name="shift_partner_username"
+                                    placeholder="doctor/intern/trainee"
+                                >
+                            </div>
+                            <div class="col-md-3 d-flex flex-wrap gap-2">
                                 <button class="btn btn-success btn-sm" type="submit" name="shift_action" value="sign_in"><i class="bi bi-box-arrow-in-right"></i> Sign In</button>
                                 <button class="btn btn-danger btn-sm" type="submit" name="shift_action" value="sign_out"><i class="bi bi-box-arrow-left"></i> Sign Out</button>
+                                <button class="btn btn-warning btn-sm" type="submit" name="shift_action" value="shift_change"><i class="bi bi-arrow-repeat"></i> Shift Change</button>
+                                <button class="btn btn-primary btn-sm" type="submit" name="shift_action" value="shift_swap"><i class="bi bi-people"></i> Shift Swap</button>
                             </div>
                         </div>
                     </form>
