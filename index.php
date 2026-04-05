@@ -670,7 +670,8 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             <h1>Built for confidence: a hospital web experience that feels premium and alive.</h1>
             <p>
                 From first contact to discharge follow-up, this platform centralizes patient services, clinical work,
-                compliance workflows, and live operational monitoring in one cohesive experience.
+                compliance workflows, and live operational monitoring in one cohesive experience. The clinic is located
+                in the Centre Region, Yaounde, in the Sanaga Division, Mbandjock, a few meters away from SOSUCAM.
             </p>
             <div class="actions">
                 <a href="#portal" class="btn primary">Sign In From Home Page</a>
@@ -764,8 +765,8 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
 
     <section class="upload-panel" id="home-upload">
         <div class="portal-head" style="margin-bottom:0.75rem;">
-            <h2>Upload Files and Images</h2>
-            <p>Share documents or media directly from the home page.</p>
+            <h2>Upload Pictures and Files</h2>
+            <p>Share clinic pictures, documents, or media directly from the home page.</p>
         </div>
 
         <?php if ($uploadMessage): ?>
@@ -783,7 +784,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                         <label for="home_file" class="form-label"><strong>Select File</strong></label>
                         <input class="form-control" type="file" id="home_file" name="home_file" required>
                     </div>
-                    <p class="upload-note">Allowed: JPG, PNG, GIF, WEBP, PDF, DOC, DOCX, TXT. Max size: 5 MB.</p>
+                    <p class="upload-note">Allowed: JPG, JPEG, PNG, GIF, WEBP, PDF, DOC, DOCX, TXT. Max size: 5 MB.</p>
                     <button class="btn btn-primary" type="submit" name="upload_home_file">Upload</button>
                 </form>
             </div>

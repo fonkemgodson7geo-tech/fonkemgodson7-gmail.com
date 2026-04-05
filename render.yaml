@@ -11,7 +11,7 @@ services:
       - key: DB_FILE
         value: /app/data/clinic.db
       - key: SITE_NAME
-        value: CENTRE MEDICAL DONS DE SOINS
+        value: CENTRE MÉDICAL DONS DE SOINS
       - key: SITE_URL
         value: https://awcd.onrender.com
       - key: PAYMENT_NUMBER
