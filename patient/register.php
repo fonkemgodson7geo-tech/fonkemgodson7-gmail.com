@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password   = $_POST['password']        ?? '';
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name  = trim($_POST['last_name']  ?? '');
+    $phone      = trim($_POST['phone']      ?? '');
 
     // Server-side validation
     $errors = [];
@@ -31,13 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (empty($last_name) || strlen($last_name) > 80) {
         $errors[] = 'Last name is required (max 80 characters).';
     }
+    if ($phone === '' || !preg_match('/^\+?[0-9][0-9\s\-\.]{6,19}$/', $phone)) {
+        $errors[] = 'A valid phone number is required.';
+    }
     if (!empty($errors)) {
         $message = implode(' ', $errors);
     } else {
         try {
             $pdo = getDB();
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role, first_name, last_name) VALUES (?, ?, ?, 'patient', ?, ?)");
-            $stmt->execute([$username, $email, hashPassword($password), $first_name, $last_name]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role, first_name, last_name, phone) VALUES (?, ?, ?, 'patient', ?, ?, ?)");
+            $stmt->execute([$username, $email, hashPassword($password), $first_name, $last_name, $phone]);
             $message = 'Registration successful. Please sign in.';
         } catch (PDOException $e) {
             error_log('Patient registration DB error: ' . $e->getMessage());
@@ -255,6 +259,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div id="password-meter-bar" class="password-meter-bar"></div>
                         </div>
                         <div id="password-hint" class="password-hint">Use at least 8 characters including letters and numbers.</div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input
+                            type="tel"
+                            class="form-control"
+                            id="phone"
+                            name="phone"
+                            placeholder="+237 6XX XXX XXX"
+                            value="<?php echo htmlspecialchars($phone ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                            required
+                        >
                     </div>
 
                     <div class="mt-4">

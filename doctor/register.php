@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $firstName = trim((string)($_POST['first_name'] ?? ''));
     $lastName = trim((string)($_POST['last_name'] ?? ''));
+    $phone = trim((string)($_POST['phone'] ?? ''));
     $specialization = trim((string)($_POST['specialization'] ?? 'General Medicine'));
 
     $errors = [];
@@ -35,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($firstName === '' || $lastName === '') {
         $errors[] = 'First and last name are required.';
     }
+    if ($phone === '' || !preg_match('/^\+?[0-9][0-9\s\-\.]{6,19}$/', $phone)) {
+        $errors[] = 'A valid phone number is required.';
+    }
 
     if ($errors) {
         $message = implode(' ', $errors);
@@ -43,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo = getDB();
             $pdo->beginTransaction();
 
-            $insertUser = $pdo->prepare("INSERT INTO users (username, email, password, role, first_name, last_name) VALUES (?, ?, ?, 'doctor', ?, ?)");
-            $insertUser->execute([$username, $email, hashPassword($password), $firstName, $lastName]);
+            $insertUser = $pdo->prepare("INSERT INTO users (username, email, password, role, first_name, last_name, phone) VALUES (?, ?, ?, 'doctor', ?, ?, ?)");
+            $insertUser->execute([$username, $email, hashPassword($password), $firstName, $lastName, $phone]);
             $userId = (int)$pdo->lastInsertId();
 
             $insertDoctor = $pdo->prepare('INSERT INTO doctors (user_id, specialization) VALUES (?, ?)');
@@ -93,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mt-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>" required></div>
                 <div class="mt-3"><label class="form-label">Specialization</label><input class="form-control" name="specialization" value="<?php echo htmlspecialchars($specialization, ENT_QUOTES, 'UTF-8'); ?>"></div>
                 <div class="mt-3"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required></div>
+                <div class="mt-3"><label class="form-label">Phone Number</label><input type="tel" class="form-control" name="phone" placeholder="+237 6XX XXX XXX" value="<?php echo htmlspecialchars($phone ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
                 <button class="btn btn-success w-100 mt-4" type="submit">Create Account</button>
             </form>
             <p class="mt-3 mb-0 text-center"><a href="login.php">Back to doctor sign in</a></p>
