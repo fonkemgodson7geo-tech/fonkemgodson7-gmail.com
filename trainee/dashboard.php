@@ -42,8 +42,17 @@ try {
     </div>
 </nav>
 <div class="container mt-4">
-    <h2>Welcome, <?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?></h2>
-    <p class="text-muted">Training dashboard and resources.</p>
+    <div class="d-flex align-items-center gap-3 mb-2">
+        <?php if (!empty($user['photo'])): ?>
+            <img src="<?php echo htmlspecialchars('../' . $user['photo'], ENT_QUOTES, 'UTF-8'); ?>" alt="Passport Photo" style="width:70px;height:70px;object-fit:cover;border-radius:50%;border:3px solid #6f42c1;">
+        <?php else: ?>
+            <div style="width:70px;height:70px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#6c757d;"><i class="bi bi-person-circle"></i></div>
+        <?php endif; ?>
+        <div>
+            <h2 class="mb-0">Welcome, <?php echo htmlspecialchars((string)$user['first_name'], ENT_QUOTES, 'UTF-8'); ?></h2>
+            <p class="text-muted mb-0">Training dashboard and resources.</p>
+        </div>
+    </div>
     <div class="card shadow-sm mb-3">
         <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>

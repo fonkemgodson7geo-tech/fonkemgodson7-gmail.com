@@ -299,9 +299,16 @@ try {
     <div class="container mt-4 mb-4">
         <div class="dashboard-header">
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1><i class="bi bi-person-badge"></i> Welcome, Dr. <?php echo htmlspecialchars($user['last_name'], ENT_QUOTES, 'UTF-8'); ?></h1>
-                    <p><?php echo htmlspecialchars($user['first_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                <div class="d-flex align-items-center gap-3">
+                    <?php if (!empty($user['photo'])): ?>
+                        <img src="<?php echo htmlspecialchars('../' . $user['photo'], ENT_QUOTES, 'UTF-8'); ?>" alt="Passport Photo" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:3px solid rgba(255,255,255,0.6);">
+                    <?php else: ?>
+                        <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:2.5rem;"><i class="bi bi-person-circle"></i></div>
+                    <?php endif; ?>
+                    <div>
+                        <h1><i class="bi bi-person-badge"></i> Welcome, Dr. <?php echo htmlspecialchars($user['last_name'], ENT_QUOTES, 'UTF-8'); ?></h1>
+                        <p><?php echo htmlspecialchars($user['first_name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    </div>
                 </div>
                 <div style="font-size: 3rem; opacity: 0.3;">
                     <i class="bi bi-hospital"></i>

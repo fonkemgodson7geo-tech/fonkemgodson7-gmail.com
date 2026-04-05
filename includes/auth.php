@@ -183,6 +183,14 @@ function writeAuditLog(string $action, ?string $tableName = null, ?int $recordId
     }
 }
 
+function _sqliteEnsureColumn(PDO $pdo, string $table, string $column, string $definition): void {
+    $stmt = $pdo->query("PRAGMA table_info(" . $table . ")");
+    $cols = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array($column, $cols, true)) {
+        $pdo->exec("ALTER TABLE " . $table . " ADD COLUMN " . $column . " " . $definition);
+    }
+}
+
 function _sqliteTableExists(PDO $pdo, string $tableName): bool {
     $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1");
     $stmt->execute([$tableName]);
@@ -201,6 +209,7 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
             first_name TEXT,
             last_name TEXT,
             phone TEXT,
+            photo TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )");
@@ -253,6 +262,11 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
         FOREIGN KEY (added_by) REFERENCES users(id),
         UNIQUE(doctor_id)
     )");
+
+    // Ensure photo column exists on pre-existing users tables
+    if (_sqliteTableExists($pdo, 'users')) {
+        _sqliteEnsureColumn($pdo, 'users', 'photo', 'TEXT');
+    }
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
