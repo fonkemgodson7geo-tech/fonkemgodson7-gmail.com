@@ -122,6 +122,7 @@ function actionBadgeClass(string $action): string {
                 <div class="navbar-nav ms-auto">
                     <a class="nav-link" href="dashboard.php">Dashboard</a>
                     <a class="nav-link" href="manage_users.php">Manage Users</a>
+                    <a class="nav-link" href="operations_records.php">Operations</a>
                     <a class="nav-link active" href="logs.php">Logs</a>
                     <a class="nav-link" href="logout.php">Logout</a>
                 </div>

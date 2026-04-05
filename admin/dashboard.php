@@ -207,6 +207,9 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="logs.php">
                         <i class="bi bi-journal-text"></i> Logs
                     </a>
+                    <a class="nav-link" href="operations_records.php">
+                        <i class="bi bi-clipboard-data"></i> Operations
+                    </a>
                     <a class="nav-link" href="realtime_gateway.php">
                         <i class="bi bi-broadcast"></i> Realtime
                     </a>
