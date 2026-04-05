@@ -230,7 +230,19 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )");
-    }
+
+        }
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            check_in DATETIME,
+            check_out DATETIME,
+            date DATE,
+            status TEXT DEFAULT 'present' CHECK (status IN ('present', 'absent', 'late')),
+            notes TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS pharmacy_doctors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
