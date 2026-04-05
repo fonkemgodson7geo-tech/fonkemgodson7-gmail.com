@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/language.php';
 
 // Prevent private authenticated pages from being indexed by search engines.
 if (!headers_sent()) {

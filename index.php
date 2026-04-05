@@ -1,5 +1,6 @@
 <?php
 require_once 'config/config.php';
+require_once 'includes/language.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -92,7 +93,7 @@ $baseUrl = SITE_URL !== '' ? SITE_URL : ($host !== '' ? ($scheme . '://' . $host
 $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(appLang(), ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -657,6 +658,8 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             <a class="chip-link" href="staff/register.php">Register Staff</a>
             <a class="chip-link" href="public_communications.php">Communications</a>
             <a class="chip-link" href="accreditation.php">Accreditation</a>
+            <a class="chip-link" href="?lang=en">English</a>
+            <a class="chip-link" href="?lang=fr">Francais</a>
         </nav>
         <div class="status-pill" id="statusPill" role="status" aria-live="polite">
             <span class="dot" id="statusDot"></span>

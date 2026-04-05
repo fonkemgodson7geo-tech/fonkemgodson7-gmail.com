@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(appLang(), ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($message): ?>
                 <div class="alert alert-danger"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
+            <div class="text-end mb-2">
+                <a href="?lang=en" class="small">EN</a> |
+                <a href="?lang=fr" class="small">FR</a>
+            </div>
             <form method="post" novalidate>
                 <?php echo csrfField(); ?>
                 <div class="mb-3">
@@ -56,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label class="form-label" for="password">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="showPassword">
+                        <label class="form-check-label" for="showPassword">Show password</label>
+                    </div>
                 </div>
                 <button class="btn btn-info text-white w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> Sign In</button>
             </form>
@@ -63,5 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+<script>
+    const passwordField = document.getElementById('password');
+    const showPassword = document.getElementById('showPassword');
+    if (passwordField && showPassword) {
+        showPassword.addEventListener('change', function () {
+            passwordField.type = this.checked ? 'text' : 'password';
+        });
+    }
+</script>
 </body>
 </html>

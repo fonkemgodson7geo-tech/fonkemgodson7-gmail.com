@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim((string)($_POST['username'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
+    $confirmPassword = (string)($_POST['confirm_password'] ?? '');
     $firstName = trim((string)($_POST['first_name'] ?? ''));
     $lastName = trim((string)($_POST['last_name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
@@ -24,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) $errors[] = 'Username contains invalid characters.';
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please provide a valid email address.';
     if (strlen($password) < 8) $errors[] = 'Password must be at least 8 characters long.';
+    if ($password !== $confirmPassword) $errors[] = 'Passwords do not match.';
     if ($firstName === '' || $lastName === '') $errors[] = 'First and last name are required.';
     if ($phone === '' || !preg_match('/^\+?[0-9][0-9\s\-\.]{6,19}$/', $phone)) $errors[] = 'A valid phone number is required.';
 
@@ -82,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(appLang(), ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,6 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($message): ?>
                 <div class="alert <?php echo str_contains($message, 'successfully') ? 'alert-success' : 'alert-danger'; ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
+            <div class="text-end mb-2">
+                <a href="?lang=en" class="small">EN</a> |
+                <a href="?lang=fr" class="small">FR</a>
+            </div>
             <form method="post" enctype="multipart/form-data" novalidate>
                 <?php echo csrfField(); ?>
                 <div class="row g-3">
@@ -105,7 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="mt-3"><label class="form-label">Username</label><input class="form-control" name="username" value="<?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?>" required></div>
                 <div class="mt-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>" required></div>
-                <div class="mt-3"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required></div>
+                <div class="mt-3"><label class="form-label">Password</label><input type="password" class="form-control" id="password" name="password" required></div>
+                <div class="mt-3"><label class="form-label">Confirm Password</label><input type="password" class="form-control" id="confirm_password" name="confirm_password" required><div id="password_match_hint" class="form-text">Re-type your password to confirm.</div></div>
+                <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="showPasswords"><label class="form-check-label" for="showPasswords">Show passwords</label></div>
                 <div class="mt-3"><label class="form-label">Phone Number</label><input type="tel" class="form-control" name="phone" placeholder="+237 6XX XXX XXX" value="<?php echo htmlspecialchars($phone ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
                 <div class="mt-3"><label class="form-label">Passport Size Photo <span class="text-danger">*</span></label><input type="file" class="form-control" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" required><div class="form-text">Upload a clear passport-size photo (JPG, PNG or WebP, max 2 MB).</div></div>
                 <button class="btn w-100 mt-4" style="background:#6f42c1;color:#fff;" type="submit">Create Account</button>
@@ -114,5 +122,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+<script>
+    const pwd = document.getElementById('password');
+    const confirmPwd = document.getElementById('confirm_password');
+    const showPwds = document.getElementById('showPasswords');
+    const hint = document.getElementById('password_match_hint');
+
+    const updateHint = () => {
+        if (!pwd || !confirmPwd || !hint) return;
+        if (confirmPwd.value === '') {
+            hint.textContent = 'Re-type your password to confirm.';
+            hint.className = 'form-text';
+            return;
+        }
+        if (pwd.value === confirmPwd.value) {
+            hint.textContent = 'Passwords match.';
+            hint.className = 'form-text text-success';
+        } else {
+            hint.textContent = 'Passwords do not match.';
+            hint.className = 'form-text text-danger';
+        }
+    };
+
+    if (showPwds && pwd && confirmPwd) {
+        showPwds.addEventListener('change', function () {
+            const type = this.checked ? 'text' : 'password';
+            pwd.type = type;
+            confirmPwd.type = type;
+        });
+    }
+    if (pwd && confirmPwd) {
+        pwd.addEventListener('input', updateHint);
+        confirmPwd.addEventListener('input', updateHint);
+    }
+</script>
 </body>
 </html>

@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username   = trim($_POST['username']   ?? '');
     $email      = trim($_POST['email']      ?? '');
     $password   = $_POST['password']        ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name  = trim($_POST['last_name']  ?? '');
     $phone      = trim($_POST['phone']      ?? '');
@@ -25,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     if (strlen($password) < 8) {
         $errors[] = 'Password must be at least 8 characters long.';
+    }
+    if ($password !== $confirm_password) {
+        $errors[] = 'Passwords do not match.';
     }
     if (empty($first_name) || strlen($first_name) > 80) {
         $errors[] = 'First name is required (max 80 characters).';
@@ -57,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(appLang(), ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -191,6 +195,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 <?php endif; ?>
 
+                <div class="text-end mb-2">
+                    <a href="?lang=en" class="small">EN</a> |
+                    <a href="?lang=fr" class="small">FR</a>
+                </div>
+
                 <form method="post" action="" novalidate>
                     <?php echo csrfField(); ?>
 
@@ -262,6 +271,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
 
                     <div class="mt-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="confirm_password"
+                            name="confirm_password"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <div id="password-match-hint" class="password-hint">Re-type your password to confirm.</div>
+                    </div>
+
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="show-passwords">
+                        <label class="form-check-label" for="show-passwords">Show passwords</label>
+                    </div>
+
+                    <div class="mt-3">
                         <label for="phone" class="form-label">Phone Number</label>
                         <input
                             type="tel"
@@ -290,8 +317,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script>
         const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const showPasswords = document.getElementById('show-passwords');
+        const passwordMatchHint = document.getElementById('password-match-hint');
         const meterBar = document.getElementById('password-meter-bar');
         const passwordHint = document.getElementById('password-hint');
+
+        function updatePasswordMatch() {
+            if (!passwordInput || !confirmPasswordInput || !passwordMatchHint) return;
+            if (confirmPasswordInput.value === '') {
+                passwordMatchHint.textContent = 'Re-type your password to confirm.';
+                passwordMatchHint.style.color = '#6b7280';
+                return;
+            }
+            if (passwordInput.value === confirmPasswordInput.value) {
+                passwordMatchHint.textContent = 'Passwords match.';
+                passwordMatchHint.style.color = '#16a34a';
+            } else {
+                passwordMatchHint.textContent = 'Passwords do not match.';
+                passwordMatchHint.style.color = '#dc2626';
+            }
+        }
 
         passwordInput.addEventListener('input', function () {
             const value = passwordInput.value;
@@ -318,7 +364,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 meterBar.style.background = '#16a34a';
                 passwordHint.textContent = 'Strong password';
             }
+
+            updatePasswordMatch();
         });
+
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', updatePasswordMatch);
+        }
+
+        if (showPasswords) {
+            showPasswords.addEventListener('change', function () {
+                const type = this.checked ? 'text' : 'password';
+                if (passwordInput) passwordInput.type = type;
+                if (confirmPasswordInput) confirmPasswordInput.type = type;
+            });
+        }
     </script>
 </body>
 </html>
