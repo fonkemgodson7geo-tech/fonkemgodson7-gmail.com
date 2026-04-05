@@ -7,6 +7,100 @@ requireDesignatedAdmin();
 $message = '';
 $error = '';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_patient'])) {
+    verifyCsrf();
+    $userId = (int)($_POST['user_id'] ?? 0);
+
+    if ($userId <= 0) {
+        $error = 'Invalid request.';
+    } else {
+        try {
+            $pdo = getDB();
+
+            // Verify target is a patient (non-admin) and not the designated admin
+            $uStmt = $pdo->prepare('SELECT id, username, role, first_name, last_name, email FROM users WHERE id = ? LIMIT 1');
+            $uStmt->execute([$userId]);
+            $targetUser = $uStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            if (!$targetUser) {
+                $error = 'User not found.';
+            } elseif ((string)($targetUser['role'] ?? '') !== 'patient') {
+                $error = 'Only patient accounts can be deleted through this action.';
+            } elseif (strcasecmp((string)($targetUser['username'] ?? ''), ADMIN_LOGIN_USERNAME) === 0) {
+                $error = 'The designated admin account cannot be deleted.';
+            } else {
+                $pdo->beginTransaction();
+
+                // Collect the patient row id (if exists)
+                $patStmt = $pdo->prepare('SELECT id FROM patients WHERE user_id = ? LIMIT 1');
+                $patStmt->execute([$userId]);
+                $patientId = (int)($patStmt->fetchColumn() ?: 0);
+
+                // Helper: silently delete from a table if it exists
+                $safeDelete = function (string $sql, array $params) use ($pdo): void {
+                    try {
+                        $s = $pdo->prepare($sql);
+                        $s->execute($params);
+                    } catch (PDOException $ignored) {
+                        // table may not exist yet — skip
+                    }
+                };
+
+                if ($patientId > 0) {
+                    // Collect consultation IDs for child-prescription cleanup
+                    $consultIds = [];
+                    try {
+                        $cStmt = $pdo->prepare('SELECT id FROM consultations WHERE patient_id = ?');
+                        $cStmt->execute([$patientId]);
+                        $consultIds = $cStmt->fetchAll(PDO::FETCH_COLUMN);
+                    } catch (PDOException $ignored) {}
+
+                    // Prescriptions → depends on consultations
+                    foreach ($consultIds as $cid) {
+                        $safeDelete('DELETE FROM prescriptions WHERE consultation_id = ?', [(int)$cid]);
+                    }
+
+                    // All direct patient_id linked tables
+                    foreach (['consultations', 'appointments', 'lab_reports', 'payments', 'certificates', 'patient_group_members'] as $tbl) {
+                        $safeDelete("DELETE FROM $tbl WHERE patient_id = ?", [$patientId]);
+                    }
+
+                    // Patient row
+                    $safeDelete('DELETE FROM patients WHERE id = ?', [$patientId]);
+                }
+
+                // Finally delete the user account itself
+                $delUser = $pdo->prepare('DELETE FROM users WHERE id = ?');
+                $delUser->execute([$userId]);
+
+                writeAuditLog(
+                    'delete patient',
+                    'users',
+                    $userId,
+                    [
+                        'username'   => (string)($targetUser['username']   ?? ''),
+                        'email'      => (string)($targetUser['email']      ?? ''),
+                        'first_name' => (string)($targetUser['first_name'] ?? ''),
+                        'last_name'  => (string)($targetUser['last_name']  ?? ''),
+                        'role'       => 'patient',
+                        'patient_id' => $patientId ?: null,
+                    ],
+                    null
+                );
+
+                $pdo->commit();
+                $message = 'Patient and all associated records deleted successfully.';
+            }
+        } catch (PDOException $e) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('Delete patient error: ' . $e->getMessage());
+            $error = 'Could not delete patient. Please try again.';
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
     verifyCsrf();
     $userId = (int)($_POST['user_id'] ?? 0);
@@ -131,19 +225,30 @@ try {
                                         </span>
                                     </td>
                                     <td>
-                                        <form method="post" class="d-flex gap-2">
-                                            <?php echo csrfField(); ?>
-                                            <input type="hidden" name="user_id" value="<?php echo (int)$u['id']; ?>">
-                                            <select name="role" class="form-select form-select-sm">
-                                                <?php foreach (['patient', 'doctor', 'admin', 'staff', 'intern', 'trainee'] as $r): ?>
-                                                    <?php if ($r === 'admin' && strcasecmp((string)$u['username'], ADMIN_LOGIN_USERNAME) !== 0) { continue; } ?>
-                                                    <option value="<?php echo htmlspecialchars($r, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $u['role'] === $r ? 'selected' : ''; ?>>
-                                                        <?php echo htmlspecialchars(ucfirst($r), ENT_QUOTES, 'UTF-8'); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                            <button type="submit" name="update_role" class="btn btn-sm btn-danger">Save</button>
-                                        </form>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <form method="post" class="d-flex gap-2">
+                                                <?php echo csrfField(); ?>
+                                                <input type="hidden" name="user_id" value="<?php echo (int)$u['id']; ?>">
+                                                <select name="role" class="form-select form-select-sm">
+                                                    <?php foreach (['patient', 'doctor', 'admin', 'staff', 'intern', 'trainee'] as $r): ?>
+                                                        <?php if ($r === 'admin' && strcasecmp((string)$u['username'], ADMIN_LOGIN_USERNAME) !== 0) { continue; } ?>
+                                                        <option value="<?php echo htmlspecialchars($r, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $u['role'] === $r ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars(ucfirst($r), ENT_QUOTES, 'UTF-8'); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <button type="submit" name="update_role" class="btn btn-sm btn-danger">Save</button>
+                                            </form>
+                                            <?php if ($u['role'] === 'patient' && strcasecmp((string)$u['username'], ADMIN_LOGIN_USERNAME) !== 0): ?>
+                                            <form method="post" onsubmit="return confirm('DELETE patient <?php echo htmlspecialchars(addslashes(trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?: $u['username']), ENT_QUOTES, 'UTF-8'); ?> and ALL their records? This cannot be undone.');">
+                                                <?php echo csrfField(); ?>
+                                                <input type="hidden" name="user_id" value="<?php echo (int)$u['id']; ?>">
+                                                <button type="submit" name="delete_patient" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i> Delete Patient
+                                                </button>
+                                            </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
