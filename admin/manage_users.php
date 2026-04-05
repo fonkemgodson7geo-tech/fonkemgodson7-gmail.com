@@ -151,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
 $users = [];
 try {
     $pdo = getDB();
-    $stmt = $pdo->query('SELECT id, username, email, first_name, last_name, role, created_at FROM users ORDER BY created_at DESC');
+    $stmt = $pdo->query('SELECT id, username, email, first_name, last_name, role, photo, created_at FROM users ORDER BY created_at DESC');
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('Manage users list error: ' . $e->getMessage());
@@ -201,6 +201,7 @@ try {
                 <table class="table table-striped align-middle">
                     <thead>
                         <tr>
+                            <th>Photo</th>
                             <th>Name</th>
                             <th>Username</th>
                             <th>Email</th>
@@ -211,10 +212,17 @@ try {
                     </thead>
                     <tbody>
                         <?php if (!$users): ?>
-                            <tr><td colspan="6" class="text-center text-muted">No users found.</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted">No users found.</td></tr>
                         <?php else: ?>
                             <?php foreach ($users as $u): ?>
                                 <tr>
+                                    <td>
+                                        <?php if (!empty($u['photo']) && in_array($u['role'], ['doctor', 'trainee'], true)): ?>
+                                            <img src="<?php echo htmlspecialchars('../' . $u['photo'], ENT_QUOTES, 'UTF-8'); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:2px solid #dee2e6;">
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars(trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?: 'N/A', ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td><?php echo htmlspecialchars($u['username'], ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td><?php echo htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8'); ?></td>
