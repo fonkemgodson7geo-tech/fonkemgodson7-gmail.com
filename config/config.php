@@ -79,6 +79,8 @@ define('TWILIO_VOICE_URL',   getenv('TWILIO_VOICE_URL') ?: '');
 define('PAYMENT_PINCODE',    getenv('PAYMENT_PINCODE') ?: '');
 define('PAYMENT_DEV_SHOW_CODE', getenv('PAYMENT_DEV_SHOW_CODE') ?: '1');
 define('ADMIN_LOGIN_USERNAME', getenv('ADMIN_LOGIN_USERNAME') ?: 'admie');
+define('ADMIN_LOGIN_PASSWORD', getenv('ADMIN_LOGIN_PASSWORD') ?: '');
+define('ADMIN_LOGIN_EMAIL', getenv('ADMIN_LOGIN_EMAIL') ?: 'admin@clinic.com');
 
 // ── File uploads ────────────────────────────────────────────────────────────
 define('UPLOAD_DIR',    getenv('UPLOAD_DIR')    ?: __DIR__ . '/../uploads/');

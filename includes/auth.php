@@ -283,6 +283,63 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
     )");
 }
 
+function _syncDesignatedAdminCredentials(PDO $pdo): void {
+    $username = trim((string)(defined('ADMIN_LOGIN_USERNAME') ? ADMIN_LOGIN_USERNAME : ''));
+    if ($username === '') {
+        return;
+    }
+
+    $plainPassword = trim((string)(defined('ADMIN_LOGIN_PASSWORD') ? ADMIN_LOGIN_PASSWORD : ''));
+    $email = trim((string)(defined('ADMIN_LOGIN_EMAIL') ? ADMIN_LOGIN_EMAIL : 'admin@clinic.com'));
+    if ($email === '') {
+        $email = 'admin@clinic.com';
+    }
+
+    try {
+        $stmt = $pdo->prepare('SELECT id, password, role FROM users WHERE lower(username) = lower(?) LIMIT 1');
+        $stmt->execute([$username]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        if ($existing) {
+            $set = [];
+            $params = [];
+
+            if ((string)($existing['role'] ?? '') !== 'admin') {
+                $set[] = 'role = ?';
+                $params[] = 'admin';
+            }
+
+            if ($plainPassword !== '' && !password_verify($plainPassword, (string)($existing['password'] ?? ''))) {
+                $set[] = 'password = ?';
+                $params[] = password_hash($plainPassword, PASSWORD_DEFAULT);
+            }
+
+            if ($set) {
+                $params[] = (int)$existing['id'];
+                $update = $pdo->prepare('UPDATE users SET ' . implode(', ', $set) . ' WHERE id = ?');
+                $update->execute($params);
+            }
+            return;
+        }
+
+        if ($plainPassword === '') {
+            return;
+        }
+
+        $insert = $pdo->prepare('INSERT INTO users (username, password, email, role, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)');
+        $insert->execute([
+            $username,
+            password_hash($plainPassword, PASSWORD_DEFAULT),
+            $email,
+            'admin',
+            'Admin',
+            'User',
+        ]);
+    } catch (Throwable $e) {
+        error_log('Designated admin sync error: ' . $e->getMessage());
+    }
+}
+
 // Function to get PDO connection
 function getDB() {
     static $pdo = null;
@@ -295,10 +352,12 @@ function getDB() {
                 // Enable foreign keys for SQLite
                 $pdo->exec('PRAGMA foreign_keys = ON');
                 _sqliteEnsureIdentitySchema($pdo);
+                _syncDesignatedAdminCredentials($pdo);
             } else {
                 // MySQL connection (legacy)
                 $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                _syncDesignatedAdminCredentials($pdo);
             }
         } catch (PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
