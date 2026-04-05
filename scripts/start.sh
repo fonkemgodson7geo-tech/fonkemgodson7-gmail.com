@@ -6,7 +6,7 @@ DB_TYPE_VALUE="${DB_TYPE:-sqlite}"
 DB_FILE_VALUE="${DB_FILE:-database/clinic.db}"
 AUTO_SETUP_DB_VALUE="${AUTO_SETUP_DB:-1}"
 
-mkdir -p uploads
+mkdir -p uploads uploads/photos uploads/home_uploads
 
 if [ "$DB_TYPE_VALUE" = "sqlite" ]; then
     mkdir -p "$(dirname "$DB_FILE_VALUE")"

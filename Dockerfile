@@ -13,7 +13,7 @@ RUN apk add --no-cache --virtual .build-deps \
 WORKDIR /app
 COPY . /app
 
-RUN mkdir -p /app/database /app/uploads \
+RUN mkdir -p /app/database /app/uploads /app/uploads/photos \
     && chmod -R 775 /app/database /app/uploads \
     && chmod +x /app/scripts/start.sh
 
