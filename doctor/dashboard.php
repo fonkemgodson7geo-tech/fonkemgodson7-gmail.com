@@ -14,15 +14,19 @@ $user = $_SESSION['user'];
 $doctor_user_id = (int)$user['id'];
 $doctor_id = $doctor_user_id;
 $doctor_profile_id = 0;
+$doctorIsLab = false;
 $shiftMessage = '';
 $shiftError = '';
 $todayShift = null;
+$monthlyTimetable = [];
 
 try {
     $shiftPdo = getDB();
-    $profileStmt = $shiftPdo->prepare('SELECT id FROM doctors WHERE user_id = ? LIMIT 1');
+    $profileStmt = $shiftPdo->prepare('SELECT id, specialization FROM doctors WHERE user_id = ? LIMIT 1');
     $profileStmt->execute([$doctor_user_id]);
-    $doctor_profile_id = (int)$profileStmt->fetchColumn();
+    $doctorProfile = $profileStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $doctor_profile_id = (int)($doctorProfile['id'] ?? 0);
+    $doctorIsLab = stripos((string)($doctorProfile['specialization'] ?? ''), 'lab') !== false;
     if ($doctor_profile_id > 0) {
         $doctor_id = $doctor_profile_id;
     }
@@ -30,6 +34,20 @@ try {
 } catch (Throwable $e) {
     error_log('Doctor shift attendance error: ' . $e->getMessage());
     $shiftError = 'Unable to update shift attendance right now.';
+}
+
+try {
+    $pdo = getDB();
+    $monthStart = date('Y-m-01');
+    $monthEnd = date('Y-m-t');
+    $groups = $doctorIsLab ? ['doctor', 'lab_doctor'] : ['doctor'];
+    $groupPlaceholders = implode(',', array_fill(0, count($groups), '?'));
+    $ttSql = 'SELECT shift_date, start_at, end_at, shift_name, worker_group FROM shift_timetables WHERE user_id = ? AND worker_group IN (' . $groupPlaceholders . ') AND shift_date >= ? AND shift_date <= ? ORDER BY shift_date ASC, start_at ASC';
+    $ttStmt = $pdo->prepare($ttSql);
+    $ttStmt->execute(array_merge([$doctor_user_id], $groups, [$monthStart, $monthEnd]));
+    $monthlyTimetable = $ttStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    error_log('Doctor timetable load error: ' . $e->getMessage());
 }
 ?>
 
@@ -368,6 +386,42 @@ try {
                 <?php endif; ?>
                 <?php if ($shiftError): ?>
                     <div class="alert alert-danger mt-3 mb-0"><?php echo htmlspecialchars($shiftError, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white">
+                <strong><i class="bi bi-calendar3"></i> Monthly Timetable</strong>
+            </div>
+            <div class="card-body">
+                <?php if (!$monthlyTimetable): ?>
+                    <div class="text-muted">No timetable generated yet for this month.</div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Department</th>
+                                    <th>Shift</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($monthlyTimetable as $row): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars((string)$row['shift_date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars((string)$row['worker_group'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars((string)$row['shift_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars(date('H:i', strtotime((string)$row['start_at'])), ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars(date('Y-m-d H:i', strtotime((string)$row['end_at'])), ENT_QUOTES, 'UTF-8'); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
