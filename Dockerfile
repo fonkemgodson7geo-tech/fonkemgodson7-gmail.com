@@ -1,5 +1,9 @@
 FROM php:8.3-cli-alpine
 
+# Runtime deps: file/libmagic for finfo MIME detection (photo uploads)
+RUN apk add --no-cache file
+
+# Build pdo_sqlite (needed for SQLite DB support)
 RUN apk add --no-cache --virtual .build-deps \
         autoconf \
         g++ \
@@ -7,7 +11,7 @@ RUN apk add --no-cache --virtual .build-deps \
         make \
         pkgconf \
         sqlite-dev \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_sqlite \
+    && docker-php-ext-install -j"$(nproc)" pdo_sqlite \
     && apk del .build-deps
 
 WORKDIR /app

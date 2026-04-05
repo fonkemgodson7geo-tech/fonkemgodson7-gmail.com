@@ -84,6 +84,7 @@ CREATE TABLE users (
     first_name TEXT,
     last_name TEXT,
     phone TEXT,
+    photo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
