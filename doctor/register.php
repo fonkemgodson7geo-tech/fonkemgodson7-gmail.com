@@ -82,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($uploadOk) {
+        $pdo = null;
         try {
             $pdo = getDB();
             $pdo->beginTransaction();
@@ -101,11 +102,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lastName = '';
             $specialization = '';
         } catch (PDOException $e) {
-            if ($pdo->inTransaction()) {
+            if ($pdo instanceof PDO && $pdo->inTransaction()) {
                 $pdo->rollBack();
             }
-            error_log('Doctor register DB error: ' . $e->getMessage());
-            $message = 'Registration failed due to a system error.';
+            $rawError = (string)$e->getMessage();
+            error_log('Doctor register DB error: ' . $rawError);
+
+            if (stripos($rawError, 'UNIQUE') !== false && stripos($rawError, 'users.username') !== false) {
+                $message = 'That username is already in use. Please choose another one.';
+            } elseif (stripos($rawError, 'UNIQUE') !== false && stripos($rawError, 'users.email') !== false) {
+                $message = 'That email is already registered. Please use another email.';
+            } elseif (stripos($rawError, 'no column named') !== false) {
+                $message = 'Registration storage was outdated and has now been repaired. Please submit the form again.';
+            } else {
+                $message = 'Registration failed due to a system error.';
+            }
         }
         }
     }

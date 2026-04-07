@@ -131,7 +131,48 @@ function hashPassword($password) {
 
 // Function to verify password
 function verifyPassword($password, $hash) {
-    return password_verify($password, $hash);
+    $storedHash = (string)$hash;
+    if ($storedHash === '') {
+        return false;
+    }
+
+    if (password_verify((string)$password, $storedHash)) {
+        return true;
+    }
+
+    $passwordInfo = password_get_info($storedHash);
+    if (!empty($passwordInfo['algo'])) {
+        return false;
+    }
+
+    return hash_equals($storedHash, (string)$password);
+}
+
+function findUserByUsernameRole(PDO $pdo, string $username, string $role): ?array {
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE lower(username) = lower(?) AND role = ? LIMIT 1');
+    $stmt->execute([trim($username), $role]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $user ?: null;
+}
+
+function upgradeUserPasswordHash(PDO $pdo, array &$user, string $plainPassword): void {
+    $storedHash = (string)($user['password'] ?? '');
+    $userId = (int)($user['id'] ?? 0);
+    if ($storedHash === '' || $userId <= 0) {
+        return;
+    }
+
+    $passwordInfo = password_get_info($storedHash);
+    $isLegacyPlaintext = empty($passwordInfo['algo']);
+    $needsRefresh = !$isLegacyPlaintext && password_needs_rehash($storedHash, PASSWORD_DEFAULT);
+    if (!$isLegacyPlaintext && !$needsRefresh) {
+        return;
+    }
+
+    $newHash = password_hash($plainPassword, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+    $stmt->execute([$newHash, $userId]);
+    $user['password'] = $newHash;
 }
 
 function _auditJsonEncode($value): ?string {
@@ -295,9 +336,21 @@ function _sqliteEnsureIdentitySchema(PDO $pdo): void {
         FOREIGN KEY (partner_user_id) REFERENCES users(id)
     )");
 
-    // Ensure photo column exists on pre-existing users tables
+    // Keep legacy SQLite databases compatible with current auth/profile fields.
     if (_sqliteTableExists($pdo, 'users')) {
+        _sqliteEnsureColumn($pdo, 'users', 'first_name', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'users', 'last_name', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'users', 'phone', 'TEXT');
         _sqliteEnsureColumn($pdo, 'users', 'photo', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'users', 'created_at', 'DATETIME');
+        _sqliteEnsureColumn($pdo, 'users', 'updated_at', 'DATETIME');
+    }
+    if (_sqliteTableExists($pdo, 'doctors')) {
+        _sqliteEnsureColumn($pdo, 'doctors', 'user_id', 'INTEGER');
+        _sqliteEnsureColumn($pdo, 'doctors', 'specialization', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'doctors', 'license_number', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'doctors', 'availability', 'TEXT');
+        _sqliteEnsureColumn($pdo, 'doctors', 'created_at', 'DATETIME');
     }
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
