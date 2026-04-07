@@ -1,6 +1,6 @@
 <?php
-require_once '../config/config.php';
-require_once '../includes/auth.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 requireLogin();
 
@@ -29,7 +29,8 @@ try {
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$patient) {
-        die('Patient not found');
+        header('Location: patients.php');
+        exit;
     }
     
     // Handle new consultation
@@ -63,7 +64,9 @@ try {
     $consultations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $e) {
-    die('Database error: ' . $e->getMessage());
+    error_log('Doctor patient_record database error: ' . $e->getMessage());
+    header('Location: patients.php');
+    exit;
 }
 ?>
 
