@@ -9,16 +9,22 @@ services:
       - key: DB_TYPE
         value: sqlite
       - key: DB_FILE
-        value: /app/data/clinic.db
+        value: /tmp/clinic.db
       - key: SITE_NAME
         value: CENTRE MÉDICAL DONS DE SOINS
       - key: SITE_URL
-        value: https://awcd.onrender.com
+        value: https://www.cmdonsdesoins.com
       - key: PAYMENT_NUMBER
         value: "681629394"
       - key: CUSTOMER_SERVICE_NUMBER
         value: "+237678612733"
+      - key: PAYMENT_DEV_SHOW_CODE
+        value: "0"
       - key: ENCRYPTION_KEY
         generateValue: true
       - key: ADMIN_LOGIN_USERNAME
         value: admie
+      - key: ADMIN_LOGIN_PASSWORD
+        generateValue: true
+      - key: ADMIN_LOGIN_EMAIL
+        value: admin@cmdonsdesoins.com
