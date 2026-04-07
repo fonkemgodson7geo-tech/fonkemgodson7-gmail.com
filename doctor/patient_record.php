@@ -4,65 +4,135 @@ require_once __DIR__ . '/../includes/auth.php';
 
 requireLogin();
 
-if ($_SESSION['user']['role'] !== 'doctor') {
+if (!hasRole('doctor')) {
     header('Location: ../index.php');
     exit;
 }
 
-$user = $_SESSION['user'];
-$doctor_id = $user['id'];
+$user      = $_SESSION['user'];
+$doctor_id = (int)$user['id'];
 
-$message = '';
+$message      = '';
+$messageType  = 'success';
 
-$patient_id = $_GET['id'] ?? null;
-if (!$patient_id) {
+$patient_id = (int)($_GET['id'] ?? 0);
+if ($patient_id <= 0) {
     header('Location: patients.php');
     exit;
 }
 
 try {
     $pdo = getDB();
-    
+
+    // Verify this patient belongs to the requesting doctor
+    $ownerStmt = $pdo->prepare(
+        "SELECT 1 FROM appointments WHERE doctor_id = ? AND patient_id = ? LIMIT 1"
+    );
+    $ownerStmt->execute([$doctor_id, $patient_id]);
+    if (!$ownerStmt->fetchColumn()) {
+        // Also allow if doctor created a consultation for this patient
+        $consCheck = $pdo->prepare(
+            "SELECT 1 FROM consultations WHERE doctor_id = ? AND patient_id = ? LIMIT 1"
+        );
+        $consCheck->execute([$doctor_id, $patient_id]);
+        if (!$consCheck->fetchColumn()) {
+            header('Location: patients.php');
+            exit;
+        }
+    }
+
     // Get patient info
-    $stmt = $pdo->prepare("SELECT p.*, u.first_name, u.last_name, u.email, u.phone FROM patients p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
+    $stmt = $pdo->prepare(
+        "SELECT p.*, u.first_name, u.last_name, u.email, u.phone
+         FROM patients p
+         JOIN users u ON p.user_id = u.id
+         WHERE p.id = ?"
+    );
     $stmt->execute([$patient_id]);
     $patient = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$patient) {
         header('Location: patients.php');
         exit;
     }
-    
+
     // Handle new consultation
     if (isset($_POST['add_consultation'])) {
-        $diagnosis = $_POST['diagnosis'];
-        $treatment = $_POST['treatment'];
-        $notes = $_POST['notes'];
-        
-        $stmt = $pdo->prepare("INSERT INTO consultations (appointment_id, doctor_id, patient_id, diagnosis, treatment, notes) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['appointment_id'] ?? null, $doctor_id, $patient_id, $diagnosis, $treatment, $notes]);
-        $message = 'Consultation added successfully';
+        verifyCsrf();
+        $diagnosis = trim((string)($_POST['diagnosis'] ?? ''));
+        $treatment = trim((string)($_POST['treatment'] ?? ''));
+        $notes     = trim((string)($_POST['notes']     ?? ''));
+        if ($diagnosis === '' || $treatment === '') {
+            $message     = 'Diagnosis and treatment are required.';
+            $messageType = 'danger';
+        } else {
+            $apptId = isset($_POST['appointment_id']) ? (int)$_POST['appointment_id'] : null;
+            $stmt = $pdo->prepare(
+                "INSERT INTO consultations (appointment_id, doctor_id, patient_id, diagnosis, treatment, notes)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            );
+            $stmt->execute([$apptId ?: null, $doctor_id, $patient_id, $diagnosis, $treatment, $notes !== '' ? $notes : null]);
+            $message = 'Consultation added successfully.';
+        }
     }
-    
+
     // Handle new prescription
     if (isset($_POST['add_prescription'])) {
-        $consultation_id = $_POST['consultation_id'];
-        $medication = $_POST['medication'];
-        $dosage = $_POST['dosage'];
-        $frequency = $_POST['frequency'];
-        $duration = $_POST['duration'];
-        $instructions = $_POST['instructions'];
-        
-        $stmt = $pdo->prepare("INSERT INTO prescriptions (consultation_id, medication, dosage, frequency, duration, instructions) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$consultation_id, $medication, $dosage, $frequency, $duration, $instructions]);
-        $message = 'Prescription added successfully';
+        verifyCsrf();
+        $consultation_id = (int)($_POST['consultation_id'] ?? 0);
+        $medication  = trim((string)($_POST['medication']   ?? ''));
+        $dosage      = trim((string)($_POST['dosage']       ?? ''));
+        $frequency   = trim((string)($_POST['frequency']    ?? ''));
+        $duration    = trim((string)($_POST['duration']     ?? ''));
+        $instructions = trim((string)($_POST['instructions'] ?? ''));
+        if ($consultation_id <= 0 || $medication === '' || $dosage === '') {
+            $message     = 'Medication and dosage are required.';
+            $messageType = 'danger';
+        } else {
+            // Verify this consultation belongs to this doctor + patient
+            $cOwn = $pdo->prepare(
+                "SELECT 1 FROM consultations WHERE id = ? AND doctor_id = ? AND patient_id = ? LIMIT 1"
+            );
+            $cOwn->execute([$consultation_id, $doctor_id, $patient_id]);
+            if ($cOwn->fetchColumn()) {
+                $stmt = $pdo->prepare(
+                    "INSERT INTO prescriptions (consultation_id, medication, dosage, frequency, duration, instructions)
+                     VALUES (?, ?, ?, ?, ?, ?)"
+                );
+                $stmt->execute([
+                    $consultation_id, $medication, $dosage,
+                    $frequency !== '' ? $frequency : null,
+                    $duration  !== '' ? $duration  : null,
+                    $instructions !== '' ? $instructions : null,
+                ]);
+                $message = 'Prescription added successfully.';
+            } else {
+                $message     = 'Consultation not found.';
+                $messageType = 'danger';
+            }
+        }
     }
-    
-    // Get consultations
-    $stmt = $pdo->prepare("SELECT * FROM consultations WHERE patient_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$patient_id]);
-    $consultations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
+    // Get consultations with their prescriptions in two queries (avoid N+1)
+    $cStmt = $pdo->prepare(
+        "SELECT * FROM consultations WHERE patient_id = ? ORDER BY created_at DESC"
+    );
+    $cStmt->execute([$patient_id]);
+    $consultations = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $prescriptionsMap = [];
+    if ($consultations) {
+        $cIds = array_map(fn($c) => (int)$c['id'], $consultations);
+        $placeholders = implode(',', array_fill(0, count($cIds), '?'));
+        $pStmt = $pdo->prepare(
+            "SELECT * FROM prescriptions WHERE consultation_id IN ($placeholders) ORDER BY id ASC"
+        );
+        $pStmt->execute($cIds);
+        foreach ($pStmt->fetchAll(PDO::FETCH_ASSOC) as $rx) {
+            $prescriptionsMap[(int)$rx['consultation_id']][] = $rx;
+        }
+    }
+
 } catch (PDOException $e) {
     error_log('Doctor patient_record database error: ' . $e->getMessage());
     header('Location: patients.php');
@@ -75,8 +145,8 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Record - <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']); ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Patient Record - <?php echo htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name'], ENT_QUOTES, 'UTF-8'); ?></title>
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
@@ -98,8 +168,8 @@ try {
             <a href="patients.php" class="btn btn-secondary">Back to Patients</a>
         </div>
         
-        <?php if ($message): ?>
-            <div class="alert alert-success"><?php echo $message; ?></div>
+        <?php if ($message !== ''): ?>
+            <div class="alert alert-<?php echo htmlspecialchars($messageType, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <!-- Patient Info -->
@@ -136,6 +206,7 @@ try {
             </div>
             <div class="card-body">
                 <form method="post">
+                    <?php echo csrfField(); ?>
                     <div class="mb-3">
                         <label for="diagnosis" class="form-label">Diagnosis</label>
                         <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required></textarea>
@@ -173,9 +244,7 @@ try {
                         
                         <!-- Prescriptions for this consultation -->
                         <?php
-                        $stmt = $pdo->prepare("SELECT * FROM prescriptions WHERE consultation_id = ?");
-                        $stmt->execute([$consultation['id']]);
-                        $prescriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $prescriptions = $prescriptionsMap[(int)$consultation['id']] ?? [];
                         if ($prescriptions):
                         ?>
                             <h6>Prescriptions:</h6>
@@ -187,9 +256,10 @@ try {
                         <?php endif; ?>
                         
                         <!-- Add Prescription Form (hidden by default) -->
-                        <div id="prescription-form-<?php echo $consultation['id']; ?>" style="display: none;" class="mt-3">
+                        <div id="prescription-form-<?php echo (int)$consultation['id']; ?>" style="display: none;" class="mt-3">
                             <form method="post">
-                                <input type="hidden" name="consultation_id" value="<?php echo $consultation['id']; ?>">
+                                <?php echo csrfField(); ?>
+                                <input type="hidden" name="consultation_id" value="<?php echo (int)$consultation['id']; ?>">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <input type="text" name="medication" class="form-control mb-2" placeholder="Medication" required>
@@ -210,10 +280,11 @@ try {
         </div>
     </div>
 
+    <script src="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         function togglePrescription(consultationId) {
             const form = document.getElementById('prescription-form-' + consultationId);
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
         }
     </script>
 </body>
