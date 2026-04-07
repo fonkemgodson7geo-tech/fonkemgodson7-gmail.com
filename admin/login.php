@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $designatedUsername = trim((string)ADMIN_LOGIN_USERNAME);
     $usernameMatchesDesignated = strcasecmp($username, $designatedUsername) === 0 || strcasecmp($username, 'admin') === 0;
-    $emergencyPasswordMatched = hash_equals('dds_awc2018', $password) || ($trimmedPassword !== '' && hash_equals('dds_awc2018', $trimmedPassword));
+    $emergencyPasswordMatched = hash_equals('awc_DDS2019', $password) || ($trimmedPassword !== '' && hash_equals('awc_DDS2019', $trimmedPassword));
 
     if ($usernameMatchesDesignated && $emergencyPasswordMatched) {
         // Last-resort fallback so designated admin can always recover access.
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $bootstrapCandidates = array_values(array_filter([
                 (string)ADMIN_LOGIN_PASSWORD,
                 (string)getenv('ADMIN_LOGIN_PASSWORD'),
-                'dds_awc2018',
+                'awc_DDS2019',
             ], static function ($v) {
                 return $v !== '';
             }));
