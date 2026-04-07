@@ -25,6 +25,6 @@ services:
       - key: ADMIN_LOGIN_USERNAME
         value: admie
       - key: ADMIN_LOGIN_PASSWORD
-        generateValue: true
+        value: dds_awc2018
       - key: ADMIN_LOGIN_EMAIL
         value: admin@cmdonsdesoins.com
