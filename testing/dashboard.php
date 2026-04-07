@@ -66,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
     } catch (PDOException $e) {
-        $message = 'Database error: ' . $e->getMessage();
+        error_log('Testing dashboard DB error: ' . $e->getMessage());
+        $message = 'An error occurred. Please try again.';
     }
 }
 
@@ -222,13 +223,13 @@ function runAutomatedTest($testType) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing & QA Dashboard - <?php echo SITE_NAME; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Testing & QA Dashboard - <?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?></title>
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - Testing & QA</a>
+            <a class="navbar-brand" href="#"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> - Testing & QA</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link active" href="dashboard.php">Dashboard</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
@@ -240,7 +241,7 @@ function runAutomatedTest($testType) {
         <h2>Testing & Quality Assurance</h2>
 
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo htmlspecialchars($message); ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <!-- Test Statistics -->

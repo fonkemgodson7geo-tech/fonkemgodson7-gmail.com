@@ -32,12 +32,12 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultations - Doctor Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
-            <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - Doctor</a>
+            <a class="navbar-brand" href="#"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> - Doctor</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="dashboard.php">Dashboard</a>
                 <a class="nav-link" href="appointments.php">Appointments</a>

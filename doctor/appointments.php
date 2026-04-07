@@ -24,17 +24,22 @@ try {
     error_log('Doctor appointments profile lookup error: ' . $e->getMessage());
 }
 
-if (isset($_POST['update_status'])) {
-    $appointment_id = $_POST['appointment_id'];
-    $status = $_POST['status'];
-    
-    try {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("UPDATE appointments SET status = ? WHERE id = ? AND doctor_id = ?");
-        $stmt->execute([$status, $appointment_id, $doctor_profile_id]);
-        $message = 'Appointment status updated successfully';
-    } catch (PDOException $e) {
-        $message = 'Error updating appointment';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    verifyCsrf();
+    $appointment_id = (int)($_POST['appointment_id'] ?? 0);
+    $allowed_statuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    $status = in_array($_POST['status'] ?? '', $allowed_statuses, true) ? $_POST['status'] : '';
+
+    if ($appointment_id > 0 && $status !== '') {
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare('UPDATE appointments SET status = ? WHERE id = ? AND doctor_id = ?');
+            $stmt->execute([$status, $appointment_id, $doctor_profile_id]);
+            $message = 'Appointment status updated successfully';
+        } catch (PDOException $e) {
+            error_log('Doctor appointments update error: ' . $e->getMessage());
+            $message = 'Error updating appointment';
+        }
     }
 }
 ?>
@@ -45,12 +50,12 @@ if (isset($_POST['update_status'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointments - Doctor Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
-            <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - Doctor</a>
+            <a class="navbar-brand" href="#"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> - Doctor</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="dashboard.php">Dashboard</a>
                 <a class="nav-link active" href="appointments.php">Appointments</a>
@@ -66,7 +71,7 @@ if (isset($_POST['update_status'])) {
         <h2>My Appointments</h2>
         
         <?php if ($message): ?>
-            <div class="alert alert-info"><?php echo $message; ?></div>
+            <div class="alert alert-info"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <div class="card">
@@ -104,7 +109,8 @@ if (isset($_POST['update_status'])) {
                                 echo "<td><span class='badge bg-" . ($appointment['status'] == 'confirmed' ? 'success' : ($appointment['status'] == 'pending' ? 'warning' : 'secondary')) . "'>" . ucfirst($appointment['status']) . "</span></td>";
                                 echo "<td>";
                                 echo "<form method='post' style='display:inline;'>";
-                                echo "<input type='hidden' name='appointment_id' value='" . $appointment['id'] . "'>";
+                                echo csrfField();
+                                echo "<input type='hidden' name='appointment_id' value='" . (int)$appointment['id'] . "'>";
                                 echo "<select name='status' class='form-select form-select-sm d-inline-block w-auto me-1'>";
                                 echo "<option value='pending'" . ($appointment['status'] == 'pending' ? ' selected' : '') . ">Pending</option>";
                                 echo "<option value='confirmed'" . ($appointment['status'] == 'confirmed' ? ' selected' : '') . ">Confirmed</option>";
@@ -113,7 +119,7 @@ if (isset($_POST['update_status'])) {
                                 echo "</select>";
                                 echo "<button type='submit' name='update_status' class='btn btn-sm btn-primary'>Update</button>";
                                 echo "</form>";
-                                echo "<a href='patient_record.php?id=" . $appointment['patient_id'] . "' class='btn btn-sm btn-info ms-1'>View Patient</a>";
+                                echo "<a href='patient_record.php?id=" . (int)$appointment['patient_id'] . "' class='btn btn-sm btn-info ms-1'>View Patient</a>";
                                 echo "</td>";
                                 echo "</tr>";
                             }

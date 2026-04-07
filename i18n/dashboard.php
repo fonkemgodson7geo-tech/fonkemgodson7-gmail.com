@@ -12,7 +12,10 @@ if (!in_array($_SESSION['user']['role'], ['admin', 'translator'])) {
 $user = $_SESSION['user'];
 $message = '';
 
-$currentLang = $_GET['lang'] ?? 'en';
+$currentLang = preg_replace('/[^a-zA-Z_-]/', '', $_GET['lang'] ?? 'en');
+if (strlen($currentLang) > 10 || $currentLang === '') {
+    $currentLang = 'en';
+}
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -142,17 +145,17 @@ function __($key, $lang = null) {
 ?>
 
 <!DOCTYPE html>
-<html lang="<?php echo $currentLang; ?>">
+<html lang="<?php echo htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Internationalization - <?php echo SITE_NAME; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Internationalization - <?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?></title>
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8'); ?>/assets/vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
-            <a class="navbar-brand" href="#"><?php echo SITE_NAME; ?> - i18n</a>
+            <a class="navbar-brand" href="#"><?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?> - i18n</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link active" href="dashboard.php">Dashboard</a>
                 <a class="nav-link" href="../index.php">Back to Main</a>
@@ -187,7 +190,7 @@ function __($key, $lang = null) {
                 <div class="row">
                     <?php foreach ($languages as $lang): ?>
                         <div class="col-md-2 mb-2">
-                            <a href="?lang=<?php echo $lang['code']; ?>" class="btn btn-outline-primary <?php echo $lang['code'] === $currentLang ? 'active' : ''; ?>">
+                            <a href="?lang=<?php echo htmlspecialchars(urlencode($lang['code']), ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-outline-primary <?php echo $lang['code'] === $currentLang ? 'active' : ''; ?>">
                                 <?php echo htmlspecialchars($lang['name']); ?>
                             </a>
                         </div>
@@ -264,7 +267,7 @@ function __($key, $lang = null) {
                                         <label for="language" class="form-label">Language</label>
                                         <select class="form-select" id="language" name="language" required>
                                             <?php foreach ($languages as $lang): ?>
-                                                <option value="<?php echo $lang['code']; ?>" <?php echo $lang['code'] === $currentLang ? 'selected' : ''; ?>>
+                                                <option value="<?php echo htmlspecialchars($lang['code'], ENT_QUOTES, 'UTF-8'); ?>" <?php echo $lang['code'] === $currentLang ? 'selected' : ''; ?>>
                                                     <?php echo htmlspecialchars($lang['name']); ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -331,7 +334,7 @@ function __($key, $lang = null) {
                                 <label for="export_language" class="form-label">Language</label>
                                 <select class="form-select" id="export_language" name="export_language" required>
                                     <?php foreach ($languages as $lang): ?>
-                                        <option value="<?php echo $lang['code']; ?>">
+                                        <option value="<?php echo htmlspecialchars($lang['code'], ENT_QUOTES, 'UTF-8'); ?>">
                                             <?php echo htmlspecialchars($lang['name']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -362,7 +365,7 @@ function __($key, $lang = null) {
                             <span class="float-end"><?php echo count($allKeys); ?></span>
                         </div>
                         <div class="mb-3">
-                            <strong>Missing (<?php echo $currentLangName; ?>):</strong>
+                            <strong>Missing (<?php echo htmlspecialchars($currentLangName, ENT_QUOTES, 'UTF-8'); ?>):</strong>
                             <span class="float-end"><?php echo count($missingTranslations); ?></span>
                         </div>
                         <div class="mb-3">
