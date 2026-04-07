@@ -1,19 +1,18 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.use_strict_mode', '1');
+    session_start();
+}
+
 require_once __DIR__ . '/language.php';
 
 // Prevent private authenticated pages from being indexed by search engines.
 if (!headers_sent()) {
     header('X-Robots-Tag: noindex, nofollow, noarchive', true);
-}
-
-// Secure session configuration before session_start
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.use_strict_mode', '1');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
 }
 
 // Session timeout: 30 minutes of inactivity
