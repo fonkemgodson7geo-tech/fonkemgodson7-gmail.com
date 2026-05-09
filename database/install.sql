@@ -231,6 +231,24 @@ CREATE TABLE prescriptions_fulfilled (
     FOREIGN KEY (dispensed_by) REFERENCES users(id)
 );
 
+CREATE TABLE pharmacy_stock_movements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    inventory_id INT NOT NULL,
+    movement_type ENUM('add', 'adjust', 'dispense', 'return', 'wastage') NOT NULL,
+    quantity_change INT NOT NULL,
+    quantity_before INT NOT NULL,
+    quantity_after INT NOT NULL,
+    reason VARCHAR(255),
+    reference_type VARCHAR(50),
+    reference_id INT,
+    performed_by INT,
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_movement_inventory_created (inventory_id, created_at),
+    FOREIGN KEY (inventory_id) REFERENCES pharmacy_inventory(id),
+    FOREIGN KEY (performed_by) REFERENCES users(id)
+);
+
 CREATE TABLE pharmacy_doctors (
     id INT AUTO_INCREMENT PRIMARY KEY,
     doctor_id INT NOT NULL,
@@ -379,4 +397,22 @@ CREATE TABLE translations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (language_code) REFERENCES languages(code),
     UNIQUE KEY unique_translation (language_code, key_name)
+);
+
+-- Working Timetable Management
+CREATE TABLE shift_timetables (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    worker_group VARCHAR(50) NOT NULL,
+    shift_name VARCHAR(100) NOT NULL,
+    shift_date DATE NOT NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    generated_by INT,
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (generated_by) REFERENCES users(id),
+    INDEX idx_shift_date_group (shift_date, worker_group),
+    INDEX idx_user_group (user_id, worker_group)
 );

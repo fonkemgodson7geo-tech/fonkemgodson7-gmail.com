@@ -11,11 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND role = 'doctor'");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = findUserByUsernameRole($pdo, $username, 'doctor');
 
-        if ($user && verifyPassword($password, $user['password'])) {
+        if ($user && verifyPassword($password, (string)$user['password'])) {
+            upgradeUserPasswordHash($pdo, $user, $password);
             loginUser($user);
             header('Location: dashboard.php');
             exit;

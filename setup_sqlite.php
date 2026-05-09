@@ -311,6 +311,23 @@ CREATE TABLE pharmacy_sales (
     FOREIGN KEY (sold_by) REFERENCES users(id)
 );
 
+CREATE TABLE pharmacy_stock_movements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    inventory_id INTEGER NOT NULL,
+    movement_type TEXT NOT NULL CHECK (movement_type IN ('add', 'adjust', 'dispense', 'return', 'wastage')),
+    quantity_change INTEGER NOT NULL,
+    quantity_before INTEGER NOT NULL,
+    quantity_after INTEGER NOT NULL,
+    reason TEXT,
+    reference_type TEXT,
+    reference_id INTEGER,
+    performed_by INTEGER,
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (inventory_id) REFERENCES pharmacy_inventory(id),
+    FOREIGN KEY (performed_by) REFERENCES users(id)
+);
+
 CREATE TABLE shift_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -583,6 +600,22 @@ CREATE TABLE medication_categories (
     name TEXT NOT NULL,
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Working Timetable Management
+CREATE TABLE shift_timetables (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    worker_group TEXT NOT NULL,
+    shift_name TEXT NOT NULL,
+    shift_date DATE NOT NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    generated_by INTEGER,
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (generated_by) REFERENCES users(id)
 );
 
 -- Insert default admin user

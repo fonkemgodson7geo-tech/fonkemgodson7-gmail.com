@@ -1,6 +1,7 @@
 <?php
 require_once '../config/config.php';
 require_once '../includes/auth.php';
+require_once '../includes/pharmacy_inventory.php';
 
 requireLogin();
 
@@ -28,6 +29,7 @@ if (isset($_POST['dispense_medication'])) {
     
     try {
         $pdo = getDB();
+        pharmacyEnsureStockMovementTable($pdo);
 
         $rxStmt = $pdo->prepare("SELECT c.patient_id FROM prescriptions pr JOIN consultations c ON pr.consultation_id = c.id WHERE pr.id = ? LIMIT 1");
         $rxStmt->execute([$prescription_id]);
@@ -37,7 +39,7 @@ if (isset($_POST['dispense_medication'])) {
             $message = 'Invalid dispense request.';
         } else {
             // Check stock and selling price
-            $stmt = $pdo->prepare("SELECT quantity, COALESCE(unit_price, 0) AS unit_price FROM pharmacy_inventory WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT id, medication_name, batch_number, expiry_date, quantity, COALESCE(unit_price, 0) AS unit_price FROM pharmacy_inventory WHERE id = ?");
             $stmt->execute([$inventory_id]);
             $stockRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
@@ -47,36 +49,86 @@ if (isset($_POST['dispense_medication'])) {
                 $current_stock = (int)$stockRow['quantity'];
                 $unit_price = (float)$stockRow['unit_price'];
 
-                if ($current_stock >= $quantity) {
-                    $total_amount = $unit_price * $quantity;
-                    $has_debt = $payment_status === 'paid' ? 0 : 1;
-
-                    $pdo->beginTransaction();
-
-                    // Update inventory
-                    $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = quantity - ? WHERE id = ?");
-                    $stmt->execute([$quantity, $inventory_id]);
-
-                    // Record dispense
-                    $stmt = $pdo->prepare("INSERT INTO prescriptions_fulfilled (prescription_id, inventory_id, quantity_dispensed, dispensed_by, notes) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$prescription_id, $inventory_id, $quantity, $user_id, $notes !== '' ? $notes : null]);
-
-                    // Record sale and debt status
-                    $saleStmt = $pdo->prepare("INSERT INTO pharmacy_sales (prescription_id, patient_id, inventory_id, quantity_sold, unit_price, total_amount, payment_status, has_debt, sold_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $saleStmt->execute([$prescription_id, $patient_id, $inventory_id, $quantity, $unit_price, $total_amount, $payment_status, $has_debt, $user_id, $notes !== '' ? $notes : null]);
-
-                    // Also mirror to payments table so debt can be tracked globally
-                    $payStatus = $payment_status === 'paid' ? 'completed' : 'pending';
-                    $txid = 'PHARM-' . date('YmdHis') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
-                    $payStmt = $pdo->prepare("INSERT INTO payments (patient_id, amount, payment_method, transaction_id, status) VALUES (?, ?, ?, ?, ?)");
-                    $payStmt->execute([$patient_id, $total_amount, 'pharmacy', $txid, $payStatus]);
-
-                    $pdo->commit();
-
-                    $message = $has_debt ? 'Medication dispensed and debt recorded.' : 'Medication dispensed and marked as paid.';
+                // Never dispense expired stock.
+                $expiryDate = (string)($stockRow['expiry_date'] ?? '');
+                if ($expiryDate !== '' && strtotime($expiryDate) < strtotime(date('Y-m-d'))) {
+                    $message = 'Selected batch is expired and cannot be dispensed.';
                 } else {
-                    $message = 'Insufficient stock available';
+                    // FEFO safeguard: enforce earliest non-expired batch first for the same medication name.
+                    if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                        $fefoSql = "SELECT id, batch_number, expiry_date
+                                    FROM pharmacy_inventory
+                                    WHERE medication_name = ?
+                                      AND quantity > 0
+                                      AND (expiry_date IS NULL OR date(expiry_date) >= date('now'))
+                                    ORDER BY CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date ASC, id ASC
+                                    LIMIT 1";
+                    } else {
+                        $fefoSql = "SELECT id, batch_number, expiry_date
+                                    FROM pharmacy_inventory
+                                    WHERE medication_name = ?
+                                      AND quantity > 0
+                                      AND (expiry_date IS NULL OR expiry_date >= CURDATE())
+                                    ORDER BY CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date ASC, id ASC
+                                    LIMIT 1";
+                    }
+
+                    $fefoStmt = $pdo->prepare($fefoSql);
+                    $fefoStmt->execute([(string)$stockRow['medication_name']]);
+                    $fefoRow = $fefoStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+                    if ($fefoRow && (int)$fefoRow['id'] !== $inventory_id) {
+                        $batchLabel = (string)($fefoRow['batch_number'] ?? '') !== '' ? (string)$fefoRow['batch_number'] : 'N/A';
+                        $expLabel = (string)($fefoRow['expiry_date'] ?? '') !== '' ? (string)$fefoRow['expiry_date'] : 'N/A';
+                        $message = 'Use FEFO first: dispense batch ' . $batchLabel . ' (expiry ' . $expLabel . ') before this batch.';
+                    } elseif ($current_stock >= $quantity) {
+                        $total_amount = $unit_price * $quantity;
+                        $has_debt = $payment_status === 'paid' ? 0 : 1;
+
+                        $pdo->beginTransaction();
+
+                        // Update inventory
+                        $stmt = $pdo->prepare("UPDATE pharmacy_inventory SET quantity = quantity - ? WHERE id = ?");
+                        $stmt->execute([$quantity, $inventory_id]);
+
+                        // Record dispense
+                        $stmt = $pdo->prepare("INSERT INTO prescriptions_fulfilled (prescription_id, inventory_id, quantity_dispensed, dispensed_by, notes) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([$prescription_id, $inventory_id, $quantity, $user_id, $notes !== '' ? $notes : null]);
+                        $fulfilledId = (int)$pdo->lastInsertId();
+
+                        $quantityAfter = $current_stock - $quantity;
+                        pharmacyLogStockMovement(
+                            $pdo,
+                            $inventory_id,
+                            'dispense',
+                            -1 * (int)$quantity,
+                            $current_stock,
+                            $quantityAfter,
+                            'Dispensed against prescription',
+                            'prescription_fulfilled',
+                            $fulfilledId,
+                            (int)$user_id,
+                            $notes !== '' ? $notes : null
+                        );
+
+                        // Record sale and debt status
+                        $saleStmt = $pdo->prepare("INSERT INTO pharmacy_sales (prescription_id, patient_id, inventory_id, quantity_sold, unit_price, total_amount, payment_status, has_debt, sold_by, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        $saleStmt->execute([$prescription_id, $patient_id, $inventory_id, $quantity, $unit_price, $total_amount, $payment_status, $has_debt, $user_id, $notes !== '' ? $notes : null]);
+
+                        // Also mirror to payments table so debt can be tracked globally
+                        $payStatus = $payment_status === 'paid' ? 'completed' : 'pending';
+                        $txid = 'PHARM-' . date('YmdHis') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                        $payStmt = $pdo->prepare("INSERT INTO payments (patient_id, amount, payment_method, transaction_id, status) VALUES (?, ?, ?, ?, ?)");
+                        $payStmt->execute([$patient_id, $total_amount, 'pharmacy', $txid, $payStatus]);
+
+                        $pdo->commit();
+
+                        $message = $has_debt ? 'Medication dispensed and debt recorded.' : 'Medication dispensed and marked as paid.';
+                    } else {
+                        $message = 'Insufficient stock available';
+                    }
                 }
+
             }
         }
     } catch (PDOException $e) {
@@ -193,6 +245,7 @@ if (isset($_POST['dispense_medication'])) {
                     <div class="modal-body">
                         <input type="hidden" name="prescription_id" id="dispense_prescription_id">
                         <p><strong>Medication:</strong> <span id="dispense_medication"></span></p>
+                        <div id="fefo_hint" class="small text-muted mb-2"></div>
                         
                         <div class="mb-3">
                             <label for="inventory_id" class="form-label">Select Inventory Item</label>
@@ -201,11 +254,17 @@ if (isset($_POST['dispense_medication'])) {
                                 <?php
                                 try {
                                     $pdo = getDB();
-                                    $stmt = $pdo->query("SELECT * FROM pharmacy_inventory WHERE quantity > 0 ORDER BY medication_name");
+                                    if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                        $stmt = $pdo->query("SELECT * FROM pharmacy_inventory WHERE quantity > 0 AND (expiry_date IS NULL OR date(expiry_date) >= date('now')) ORDER BY medication_name, CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date ASC, id ASC");
+                                    } else {
+                                        $stmt = $pdo->query("SELECT * FROM pharmacy_inventory WHERE quantity > 0 AND (expiry_date IS NULL OR expiry_date >= CURDATE()) ORDER BY medication_name, CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date ASC, id ASC");
+                                    }
                                     $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     
                                     foreach ($inventory as $item) {
-                                        echo "<option value='" . $item['id'] . "'>" . htmlspecialchars($item['medication_name']) . " (Stock: " . $item['quantity'] . ")</option>";
+                                        $batch = (string)($item['batch_number'] ?? '') !== '' ? (string)$item['batch_number'] : 'N/A';
+                                        $expiry = (string)($item['expiry_date'] ?? '') !== '' ? (string)$item['expiry_date'] : 'N/A';
+                                        echo "<option value='" . (int)$item['id'] . "' data-medication='" . htmlspecialchars((string)$item['medication_name'], ENT_QUOTES, 'UTF-8') . "'>" . htmlspecialchars($item['medication_name']) . " | Batch: " . htmlspecialchars($batch) . " | Exp: " . htmlspecialchars($expiry) . " | Stock: " . (int)$item['quantity'] . "</option>";
                                     }
                                 } catch (PDOException $e) {
                                     // Handle error
@@ -244,9 +303,35 @@ if (isset($_POST['dispense_medication'])) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function normalizeMedicationName(text) {
+            return (text || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+
         function dispenseMedication(prescriptionId, medication) {
             document.getElementById('dispense_prescription_id').value = prescriptionId;
             document.getElementById('dispense_medication').textContent = medication;
+
+            const medTarget = normalizeMedicationName(medication);
+            const inventorySelect = document.getElementById('inventory_id');
+            const fefoHint = document.getElementById('fefo_hint');
+            let matched = false;
+
+            inventorySelect.selectedIndex = 0;
+            for (let i = 1; i < inventorySelect.options.length; i++) {
+                const opt = inventorySelect.options[i];
+                const optMed = normalizeMedicationName(opt.getAttribute('data-medication'));
+                if (optMed !== '' && (optMed.includes(medTarget) || medTarget.includes(optMed))) {
+                    inventorySelect.selectedIndex = i;
+                    fefoHint.textContent = 'FEFO auto-selected the earliest-expiry available batch for this medication.';
+                    matched = true;
+                    break;
+                }
+            }
+
+            if (!matched) {
+                fefoHint.textContent = 'Select the best matching inventory item. FEFO will still be enforced on submit.';
+            }
+
             new bootstrap.Modal(document.getElementById('dispenseModal')).show();
         }
     </script>

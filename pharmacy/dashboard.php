@@ -1,6 +1,7 @@
 <?php
 require_once '../config/config.php';
 require_once '../includes/auth.php';
+require_once '../includes/pharmacy_inventory.php';
 
 requireLogin();
 
@@ -51,8 +52,23 @@ if (isset($_POST['add_medication'])) {
         
         try {
             $pdo = getDB();
+            pharmacyEnsureStockMovementTable($pdo);
             $stmt = $pdo->prepare("INSERT INTO pharmacy_inventory (medication_name, quantity, unit_price, expiry_date, min_stock_level) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$medication_name, $quantity, $unit_price, $expiry_date, $min_stock]);
+            $inventoryId = (int)$pdo->lastInsertId();
+            pharmacyLogStockMovement(
+                $pdo,
+                $inventoryId,
+                'add',
+                (int)$quantity,
+                0,
+                (int)$quantity,
+                'Initial stock added',
+                'dashboard_add',
+                null,
+                (int)$user['id'],
+                'Medication added from pharmacy dashboard'
+            );
             $message = 'Medication added successfully';
         } catch (PDOException $e) {
             error_log('Pharmacy dashboard add medication error: ' . $e->getMessage());
@@ -126,7 +142,7 @@ if (isset($_POST['add_medication'])) {
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Expiring Soon</h5>
+                        <h5 class="card-title">Expiring <= 30d</h5>
                         <h3><?php
                             try {
                                 $pdo = getDB();
@@ -134,6 +150,27 @@ if (isset($_POST['add_medication'])) {
                                     $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+30 day')");
                                 } else {
                                     $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                                }
+                                $stmt->execute();
+                                echo $stmt->fetchColumn();
+                            } catch (PDOException $e) {
+                                echo 'N/A';
+                            }
+                        ?></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Expired Items</h5>
+                        <h3><?php
+                            try {
+                                $pdo = getDB();
+                                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND date(expiry_date) < date('now')");
+                                } else {
+                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pharmacy_inventory WHERE expiry_date IS NOT NULL AND expiry_date < CURDATE()");
                                 }
                                 $stmt->execute();
                                 echo $stmt->fetchColumn();
@@ -163,6 +200,50 @@ if (isset($_POST['add_medication'])) {
                             }
                         ?></h3>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Expiry Alerts by Window</h5>
+            </div>
+            <div class="card-body">
+                <?php
+                $expiryMetrics = ['d90' => 0, 'd60' => 0, 'd30' => 0, 'd7' => 0, 'expired' => 0];
+                try {
+                    $pdo = getDB();
+                    if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                        $q = "SELECT
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+90 day') AND date(expiry_date) >= date('now') THEN 1 ELSE 0 END) AS d90,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+60 day') AND date(expiry_date) >= date('now') THEN 1 ELSE 0 END) AS d60,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+30 day') AND date(expiry_date) >= date('now') THEN 1 ELSE 0 END) AS d30,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND date(expiry_date) <= date('now', '+7 day') AND date(expiry_date) >= date('now') THEN 1 ELSE 0 END) AS d7,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND date(expiry_date) < date('now') THEN 1 ELSE 0 END) AS expired
+                              FROM pharmacy_inventory";
+                    } else {
+                        $q = "SELECT
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 90 DAY) AND expiry_date >= CURDATE() THEN 1 ELSE 0 END) AS d90,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 60 DAY) AND expiry_date >= CURDATE() THEN 1 ELSE 0 END) AS d60,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND expiry_date >= CURDATE() THEN 1 ELSE 0 END) AS d30,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) AND expiry_date >= CURDATE() THEN 1 ELSE 0 END) AS d7,
+                                SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date < CURDATE() THEN 1 ELSE 0 END) AS expired
+                              FROM pharmacy_inventory";
+                    }
+
+                    $metricStmt = $pdo->query($q);
+                    $row = $metricStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                    $expiryMetrics = array_merge($expiryMetrics, array_map('intval', $row));
+                } catch (PDOException $e) {
+                    error_log('Pharmacy dashboard expiry metrics error: ' . $e->getMessage());
+                }
+                ?>
+                <div class="row g-2">
+                    <div class="col-md-2"><span class="badge bg-secondary w-100"><=90 days: <?php echo (int)$expiryMetrics['d90']; ?></span></div>
+                    <div class="col-md-2"><span class="badge bg-info text-dark w-100"><=60 days: <?php echo (int)$expiryMetrics['d60']; ?></span></div>
+                    <div class="col-md-2"><span class="badge bg-warning text-dark w-100"><=30 days: <?php echo (int)$expiryMetrics['d30']; ?></span></div>
+                    <div class="col-md-2"><span class="badge bg-danger w-100"><=7 days: <?php echo (int)$expiryMetrics['d7']; ?></span></div>
+                    <div class="col-md-2"><span class="badge bg-dark w-100">Expired: <?php echo (int)$expiryMetrics['expired']; ?></span></div>
                 </div>
             </div>
         </div>

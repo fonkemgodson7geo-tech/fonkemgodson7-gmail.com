@@ -106,6 +106,10 @@ $user = $_SESSION['user'];
             border-left-color: #17a2b8;
         }
 
+        .stat-card.timetable {
+            border-left-color: #6f42c1;
+        }
+
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
@@ -126,6 +130,10 @@ $user = $_SESSION['user'];
 
         .stat-icon.groups {
             color: #17a2b8;
+        }
+
+        .stat-icon.timetable {
+            color: #6f42c1;
         }
 
         .stat-title {
@@ -194,6 +202,9 @@ $user = $_SESSION['user'];
                     </a>
                     <a class="nav-link" href="manage_users.php">
                         <i class="bi bi-people"></i> Manage Users
+                    </a>
+                    <a class="nav-link" href="timetable.php">
+                        <i class="bi bi-calendar3"></i> Timetable
                     </a>
                     <a class="nav-link" href="manage_groups.php">
                         <i class="bi bi-diagram-3"></i> Patient Groups
@@ -325,6 +336,28 @@ $user = $_SESSION['user'];
                     ?></div>
                     <div class="stat-footer">
                         <a href="manage_groups.php" class="action-link">View Groups →</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card timetable">
+                    <div class="stat-icon timetable">
+                        <i class="bi bi-calendar3"></i>
+                    </div>
+                    <div class="stat-title">Timetable</div>
+                    <div class="stat-number"><?php
+                        try {
+                            $pdo = getDB();
+                            $stmt = $pdo->prepare("SELECT COUNT(*) FROM shift_timetables WHERE shift_date >= ? AND shift_date <= ?");
+                            $stmt->execute([date('Y-m-01'), date('Y-m-t')]);
+                            echo $stmt->fetchColumn();
+                        } catch (PDOException $e) {
+                            echo '0';
+                        }
+                    ?></div>
+                    <div class="stat-footer">
+                        <a href="timetable.php" class="action-link">Generate & View →</a>
                     </div>
                 </div>
             </div>
