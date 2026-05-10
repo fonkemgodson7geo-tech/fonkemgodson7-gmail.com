@@ -975,6 +975,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             <a class="chip-link" href="doctor/register.php">Register Doctor</a>
             <a class="chip-link" href="staff/register.php">Register Staff</a>
             <a class="chip-link" href="public_communications.php">Communications</a>
+            <a class="chip-link" href="pages.php">Pages</a>
             <a class="chip-link" href="search.php">Search</a>
             <a class="chip-link" href="accreditation.php">Accreditation</a>
             <a class="chip-link" href="?lang=en">English</a>

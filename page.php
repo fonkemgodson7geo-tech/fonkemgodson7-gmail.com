@@ -41,7 +41,7 @@ if (!$page) {
 <div class="container mt-4 mb-5">
     <a href="index.php" class="btn btn-outline-secondary btn-sm mb-3">Back Home</a>
     <?php if (!$page): ?>
-        <div class="alert alert-warning">Page not found.</div>
+        <div class="alert alert-warning">Page not found. Visit the <a href="pages.php">public pages directory</a> to see available posts.</div>
     <?php else: ?>
         <article class="card shadow-sm">
             <div class="card-body">
