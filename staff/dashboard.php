@@ -1,7 +1,7 @@
 <?php
 require_once '../config/config.php';
 require_once '../includes/auth.php';
-require_once '../includes/shift_attendance.php';
+require_once '../includes/attendance_payroll.php';
 
 requireLogin();
 if (($_SESSION['user']['role'] ?? '') !== 'staff') {
@@ -23,7 +23,29 @@ $todayShift = null;
 
 try {
     $pdo = getDB();
-    $todayShift = shiftHandleAction($pdo, (int)$user['id'], $shiftMessage, $shiftError);
+
+    // Handle shift actions
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['shift_action'])) {
+        verifyCsrf();
+        $action = (string)($_POST['shift_action'] ?? '');
+        $notes = trim((string)($_POST['shift_note'] ?? ''));
+
+        if ($action === 'sign_in') {
+            if (attendanceRecordCheckIn($pdo, (int)$user['id'], $notes)) {
+                $shiftMessage = 'Check-in recorded successfully!';
+            } else {
+                $shiftError = 'Failed to record check-in.';
+            }
+        } elseif ($action === 'sign_out') {
+            if (attendanceRecordCheckOut($pdo, (int)$user['id'], $notes)) {
+                $shiftMessage = 'Check-out recorded successfully!';
+            } else {
+                $shiftError = 'Failed to record check-out.';
+            }
+        }
+    }
+
+    $todayShift = attendanceGetTodayRecord($pdo, (int)$user['id']);
     $totals['patients'] = (string)$pdo->query('SELECT COUNT(*) FROM patients')->fetchColumn();
     if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
         $totals['appointments_today'] = (string)$pdo->query("SELECT COUNT(*) FROM appointments WHERE date(appointment_date) = date('now')")->fetchColumn();
@@ -70,15 +92,19 @@ try {
     <div class="card shadow-sm mb-3">
         <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <strong>Shift Attendance</strong>
+                <strong>Today's Attendance</strong>
                 <div class="text-muted small">
-                    <?php if ($todayShift && !empty($todayShift['check_in'])): ?>
-                        In: <?php echo htmlspecialchars((string)$todayShift['check_in'], ENT_QUOTES, 'UTF-8'); ?>
-                        <?php if (!empty($todayShift['check_out'])): ?>
-                            | Out: <?php echo htmlspecialchars((string)$todayShift['check_out'], ENT_QUOTES, 'UTF-8'); ?>
+                    <?php if ($todayShift && !empty($todayShift['actual_check_in'])): ?>
+                        Check-in: <?php echo htmlspecialchars((string)$todayShift['actual_check_in'], ENT_QUOTES, 'UTF-8'); ?>
+                        <?php if (!empty($todayShift['actual_check_out'])): ?>
+                            | Check-out: <?php echo htmlspecialchars((string)$todayShift['actual_check_out'], ENT_QUOTES, 'UTF-8'); ?>
+                            | Hours: <?php echo htmlspecialchars((string)$todayShift['total_hours'], ENT_QUOTES, 'UTF-8'); ?>h
+                        <?php endif; ?>
+                        <?php if ($todayShift['late_minutes'] > 0): ?>
+                            | Late: <?php echo htmlspecialchars((string)$todayShift['late_minutes'], ENT_QUOTES, 'UTF-8'); ?> min
                         <?php endif; ?>
                     <?php else: ?>
-                        No shift record yet for today.
+                        Not checked in yet for today.
                     <?php endif; ?>
                 </div>
             </div>

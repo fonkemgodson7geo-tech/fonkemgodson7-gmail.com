@@ -212,6 +212,9 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="attendance.php">
                         <i class="bi bi-calendar-check"></i> Attendance
                     </a>
+                    <a class="nav-link" href="attendance_reports.php">
+                        <i class="bi bi-graph-up"></i> Monthly Reports
+                    </a>
                     <a class="nav-link" href="manage_logo.php">
                         <i class="bi bi-image"></i> Branding
                     </a>

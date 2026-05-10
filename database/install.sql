@@ -126,16 +126,86 @@ CREATE TABLE lab_reports (
     FOREIGN KEY (doctor_id) REFERENCES doctors(id)
 );
 
--- Attendance
-CREATE TABLE attendance (
+-- Enhanced Attendance and Payroll System
+CREATE TABLE employee_payroll (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    check_in DATETIME,
-    check_out DATETIME,
-    date DATE,
-    status ENUM('present', 'absent', 'late') DEFAULT 'present',
+    user_id INT NOT NULL,
+    base_salary DECIMAL(10,2) NOT NULL DEFAULT 0,
+    hourly_rate DECIMAL(8,2) NOT NULL DEFAULT 0,
+    work_hours_per_day DECIMAL(4,2) NOT NULL DEFAULT 8,
+    work_days_per_month INT NOT NULL DEFAULT 26,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_employee_payroll (user_id)
+);
+
+CREATE TABLE attendance_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    attendance_date DATE NOT NULL,
+    scheduled_start_time TIME,
+    scheduled_end_time TIME,
+    actual_check_in DATETIME,
+    actual_check_out DATETIME,
+    break_start_time TIME,
+    break_end_time TIME,
+    total_hours DECIMAL(5,2) DEFAULT 0,
+    regular_hours DECIMAL(5,2) DEFAULT 0,
+    overtime_hours DECIMAL(5,2) DEFAULT 0,
+    late_minutes INT DEFAULT 0,
+    early_departure_minutes INT DEFAULT 0,
+    status ENUM('present', 'absent', 'late', 'half_day', 'holiday') DEFAULT 'present',
     notes TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    approved_by INT,
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (approved_by) REFERENCES users(id),
+    UNIQUE KEY uniq_user_date (user_id, attendance_date),
+    INDEX idx_user_date (user_id, attendance_date),
+    INDEX idx_date_status (attendance_date, status)
+);
+
+CREATE TABLE payroll_periods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    period_name VARCHAR(100) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status ENUM('open', 'processing', 'completed', 'locked') DEFAULT 'open',
+    processed_by INT,
+    processed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (processed_by) REFERENCES users(id),
+    UNIQUE KEY uniq_period_dates (start_date, end_date)
+);
+
+CREATE TABLE payroll_calculations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    payroll_period_id INT NOT NULL,
+    user_id INT NOT NULL,
+    base_salary DECIMAL(10,2) DEFAULT 0,
+    overtime_pay DECIMAL(10,2) DEFAULT 0,
+    late_deductions DECIMAL(10,2) DEFAULT 0,
+    other_deductions DECIMAL(10,2) DEFAULT 0,
+    other_allowances DECIMAL(10,2) DEFAULT 0,
+    gross_pay DECIMAL(10,2) DEFAULT 0,
+    net_pay DECIMAL(10,2) DEFAULT 0,
+    total_work_days INT DEFAULT 0,
+    total_present_days INT DEFAULT 0,
+    total_absent_days INT DEFAULT 0,
+    total_late_days INT DEFAULT 0,
+    total_overtime_hours DECIMAL(5,2) DEFAULT 0,
+    total_late_minutes INT DEFAULT 0,
+    punctuality_rating DECIMAL(5,2) DEFAULT 0,
+    notes TEXT,
+    calculated_by INT,
+    calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (payroll_period_id) REFERENCES payroll_periods(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (calculated_by) REFERENCES users(id),
+    UNIQUE KEY uniq_period_user (payroll_period_id, user_id)
 );
 
 -- Certificates
