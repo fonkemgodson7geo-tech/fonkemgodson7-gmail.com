@@ -1,0 +1,2 @@
+@echo off
+powershell -Command "$content = Get-Content 'C:\Program Files\php-8.5.6\php.ini'; $content -replace ';extension=pdo_sqlite', 'extension=pdo_sqlite' | Out-File -FilePath 'C:\Program Files\php-8.5.6\php.ini' -Encoding UTF8"
