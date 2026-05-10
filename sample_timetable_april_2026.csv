@@ -1,0 +1,151 @@
+Department,Date,Morning,Day,Evening,Night
+Doctors,2026-04-01,B,,G,
+Doctors,2026-04-02,G,,U,
+Doctors,2026-04-03,U,,M,
+Doctors,2026-04-04,M,,B,
+Doctors,2026-04-05,B,,G,
+Doctors,2026-04-06,G,,U,
+Doctors,2026-04-07,U,,M,
+Doctors,2026-04-08,M,,B,
+Doctors,2026-04-09,B,,G,
+Doctors,2026-04-10,G,,U,
+Doctors,2026-04-11,U,,M,
+Doctors,2026-04-12,M,,B,
+Doctors,2026-04-13,B,,G,
+Doctors,2026-04-14,G,,U,
+Doctors,2026-04-15,U,,M,
+Doctors,2026-04-16,M,,B,
+Doctors,2026-04-17,B,,G,
+Doctors,2026-04-18,G,,U,
+Doctors,2026-04-19,U,,M,
+Doctors,2026-04-20,M,,B,
+Doctors,2026-04-21,B,,G,
+Doctors,2026-04-22,G,,U,
+Doctors,2026-04-23,U,,M,
+Doctors,2026-04-24,M,,B,
+Doctors,2026-04-25,B,,G,
+Doctors,2026-04-26,G,,U,
+Doctors,2026-04-27,U,,M,
+Doctors,2026-04-28,M,,B,
+Doctors,2026-04-29,B,,G,
+Doctors,2026-04-30,G,,U,
+Lab Workers,2026-04-01,,U,M,
+Lab Workers,2026-04-02,,M,R,
+Lab Workers,2026-04-03,,R,S,
+Lab Workers,2026-04-04,,S,U,
+Lab Workers,2026-04-05,,U,M,
+Lab Workers,2026-04-06,,M,R,
+Lab Workers,2026-04-07,,R,S,
+Lab Workers,2026-04-08,,S,U,
+Lab Workers,2026-04-09,,U,M,
+Lab Workers,2026-04-10,,M,R,
+Lab Workers,2026-04-11,,R,S,
+Lab Workers,2026-04-12,,S,U,
+Lab Workers,2026-04-13,,U,M,
+Lab Workers,2026-04-14,,M,R,
+Lab Workers,2026-04-15,,R,S,
+Lab Workers,2026-04-16,,S,U,
+Lab Workers,2026-04-17,,U,M,
+Lab Workers,2026-04-18,,M,R,
+Lab Workers,2026-04-19,,R,S,
+Lab Workers,2026-04-20,,S,U,
+Lab Workers,2026-04-21,,U,M,
+Lab Workers,2026-04-22,,M,R,
+Lab Workers,2026-04-23,,R,S,
+Lab Workers,2026-04-24,,S,U,
+Lab Workers,2026-04-25,,U,M,
+Lab Workers,2026-04-26,,M,R,
+Lab Workers,2026-04-27,,R,S,
+Lab Workers,2026-04-28,,S,U,
+Lab Workers,2026-04-29,,U,M,
+Lab Workers,2026-04-30,,M,R,
+Pharmacy Workers,2026-04-01,,B,G,
+Pharmacy Workers,2026-04-02,,G,U,
+Pharmacy Workers,2026-04-03,,U,M,
+Pharmacy Workers,2026-04-04,,M,B,
+Pharmacy Workers,2026-04-05,,B,G,
+Pharmacy Workers,2026-04-06,,G,U,
+Pharmacy Workers,2026-04-07,,U,M,
+Pharmacy Workers,2026-04-08,,M,B,
+Pharmacy Workers,2026-04-09,,B,G,
+Pharmacy Workers,2026-04-10,,G,U,
+Pharmacy Workers,2026-04-11,,U,M,
+Pharmacy Workers,2026-04-12,,M,B,
+Pharmacy Workers,2026-04-13,,B,G,
+Pharmacy Workers,2026-04-14,,G,U,
+Pharmacy Workers,2026-04-15,,U,M,
+Pharmacy Workers,2026-04-16,,M,B,
+Pharmacy Workers,2026-04-17,,B,G,
+Pharmacy Workers,2026-04-18,,G,U,
+Pharmacy Workers,2026-04-19,,U,M,
+Pharmacy Workers,2026-04-20,,M,B,
+Pharmacy Workers,2026-04-21,,B,G,
+Pharmacy Workers,2026-04-22,,G,U,
+Pharmacy Workers,2026-04-23,,U,M,
+Pharmacy Workers,2026-04-24,,M,B,
+Pharmacy Workers,2026-04-25,,B,G,
+Pharmacy Workers,2026-04-26,,G,U,
+Pharmacy Workers,2026-04-27,,U,M,
+Pharmacy Workers,2026-04-28,,M,B,
+Pharmacy Workers,2026-04-29,,B,G,
+Pharmacy Workers,2026-04-30,,G,U,
+Interns,2026-04-01,B,,G,U
+Interns,2026-04-02,G,,U,M
+Interns,2026-04-03,U,,M,R
+Interns,2026-04-04,M,,R,S
+Interns,2026-04-05,R,,S,B
+Interns,2026-04-06,S,,B,G
+Interns,2026-04-07,B,,G,U
+Interns,2026-04-08,G,,U,M
+Interns,2026-04-09,U,,M,R
+Interns,2026-04-10,M,,R,S
+Interns,2026-04-11,R,,S,B
+Interns,2026-04-12,S,,B,G
+Interns,2026-04-13,B,,G,U
+Interns,2026-04-14,G,,U,M
+Interns,2026-04-15,U,,M,R
+Interns,2026-04-16,M,,R,S
+Interns,2026-04-17,R,,S,B
+Interns,2026-04-18,S,,B,G
+Interns,2026-04-19,B,,G,U
+Interns,2026-04-20,G,,U,M
+Interns,2026-04-21,U,,M,R
+Interns,2026-04-22,M,,R,S
+Interns,2026-04-23,R,,S,B
+Interns,2026-04-24,S,,B,G
+Interns,2026-04-25,B,,G,U
+Interns,2026-04-26,G,,U,M
+Interns,2026-04-27,U,,M,R
+Interns,2026-04-28,M,,R,S
+Interns,2026-04-29,R,,S,B
+Interns,2026-04-30,S,,B,G
+Trainees,2026-04-01,T,,C,B
+Trainees,2026-04-02,C,,B,G
+Trainees,2026-04-03,B,,G,U
+Trainees,2026-04-04,G,,U,M
+Trainees,2026-04-05,U,,M,R
+Trainees,2026-04-06,M,,R,S
+Trainees,2026-04-07,R,,S,T
+Trainees,2026-04-08,S,,T,C
+Trainees,2026-04-09,T,,C,B
+Trainees,2026-04-10,C,,B,G
+Trainees,2026-04-11,B,,G,U
+Trainees,2026-04-12,G,,U,M
+Trainees,2026-04-13,U,,M,R
+Trainees,2026-04-14,M,,R,S
+Trainees,2026-04-15,R,,S,T
+Trainees,2026-04-16,S,,T,C
+Trainees,2026-04-17,T,,C,B
+Trainees,2026-04-18,C,,B,G
+Trainees,2026-04-19,B,,G,U
+Trainees,2026-04-20,G,,U,M
+Trainees,2026-04-21,U,,M,R
+Trainees,2026-04-22,M,,R,S
+Trainees,2026-04-23,R,,S,T
+Trainees,2026-04-24,S,,T,C
+Trainees,2026-04-25,T,,C,B
+Trainees,2026-04-26,C,,B,G
+Trainees,2026-04-27,B,,G,U
+Trainees,2026-04-28,G,,U,M
+Trainees,2026-04-29,U,,M,R
+Trainees,2026-04-30,M,,R,S
