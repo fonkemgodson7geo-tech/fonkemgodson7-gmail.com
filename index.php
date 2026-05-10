@@ -30,14 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_home_file'])) 
     if (!verifyHomeCsrf()) {
         $uploadError = 'Request validation failed. Please try again.';
     } else {
-
-        if (!isset($_FILES['home_file']) || !is_array($_FILES['home_file'])) {
+        $selectedStaffSlug = trim((string)($_POST['staff_slug'] ?? ''));
+        if ($selectedStaffSlug === '' || !isset($teamMembersBySlug[$selectedStaffSlug])) {
+            $uploadError = 'Please select a valid staff member.';
+        } elseif (!isset($_FILES['home_file']) || !is_array($_FILES['home_file'])) {
             $uploadError = 'Please choose a file to upload.';
         } else {
             $file = $_FILES['home_file'];
             $maxBytes = 5 * 1024 * 1024;
-            $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt'];
-            $uploadDir = __DIR__ . '/uploads/home_uploads';
+            $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $uploadDir = __DIR__ . '/uploads/staff_photos';
 
             if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
                 $uploadError = 'Upload failed. Please try again.';
@@ -47,20 +49,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_home_file'])) 
                 $originalName = (string)($file['name'] ?? '');
                 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
                 if (!in_array($ext, $allowedExt, true)) {
-                    $uploadError = 'Unsupported file type.';
+                    $uploadError = 'Unsupported file type. Please upload a JPG, PNG, GIF, or WEBP image.';
                 } else {
                     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
                         $uploadError = 'Upload folder is not writable.';
                     } else {
-                        $safeBase = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-                        $filename = date('YmdHis') . '_' . substr(bin2hex(random_bytes(4)), 0, 8) . '_' . $safeBase . '.' . $ext;
+                        $filename = $selectedStaffSlug . '_' . date('YmdHis') . '_' . substr(bin2hex(random_bytes(4)), 0, 8) . '.' . $ext;
                         $target = $uploadDir . '/' . $filename;
 
                         if (!move_uploaded_file((string)$file['tmp_name'], $target)) {
                             $uploadError = 'Could not save uploaded file.';
                         } else {
-                            $uploadMessage = 'File uploaded successfully: ' . $filename;
-                            $autoOpenUploadUrl = 'uploads/home_uploads/' . rawurlencode($filename);
+                            $uploadMessage = 'Photo uploaded successfully for ' . $teamMembersBySlug[$selectedStaffSlug]['name'] . '.';
+                            $autoOpenUploadUrl = 'uploads/staff_photos/' . rawurlencode($filename);
+                            $teamPhotos[$selectedStaffSlug] = [
+                                'name' => $filename,
+                                'mtime' => (int)filemtime($target),
+                                'url' => 'uploads/staff_photos/' . rawurlencode($filename),
+                            ];
                         }
                     }
                 }
@@ -84,6 +90,51 @@ if (is_dir($publicUploadDir)) {
     }
     usort($recentUploads, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
     $recentUploads = array_slice($recentUploads, 0, 6);
+}
+
+$teamMembers = [
+    ['slug' => 'dr-tata-asscada', 'name' => 'Dr TATA ASSCADA', 'title' => 'Chief of Clinic, BSc MLS', 'description' => 'Promoteur et Fondateur'],
+    ['slug' => 'dr-abeng-bernard-ide', 'name' => 'Dr ABENG BERNARD IDE', 'title' => 'Accoucheur, Chef Personnel', 'description' => 'Head of Maternal Care'],
+    ['slug' => 'fonkem-catherine', 'name' => 'FONKEM CATHERINE', 'title' => 'SRN Pharmacy Major', 'description' => 'Pharmacy Operations Leader'],
+    ['slug' => 'mayang-marguerite', 'name' => 'MAYANG MARGUERITE', 'title' => 'Infirmière, PF Vaccination', 'description' => 'Vaccination and Patient Care'],
+    ['slug' => 'dr-nong-ernest', 'name' => 'Dr NONG ERNEST', 'title' => 'Senior Lab Tech', 'description' => 'Laboratory Diagnostics Lead'],
+    ['slug' => 'safouratou-zad', 'name' => 'Safouratou Zad', 'title' => 'TMS, Ass Lab Major', 'description' => 'Assistant Laboratory Manager'],
+    ['slug' => 'abanda-christel', 'name' => 'Abanda Christel', 'title' => 'Aid Soignante, Assistant Caissier et Pharmacy', 'description' => 'Patient support and pharmacy assistant'],
+];
+
+$teamMembersBySlug = [];
+foreach ($teamMembers as $member) {
+    $teamMembersBySlug[$member['slug']] = $member;
+}
+
+$teamPhotoDir = __DIR__ . '/uploads/staff_photos';
+$teamPhotos = [];
+if (is_dir($teamPhotoDir)) {
+    $entries = scandir($teamPhotoDir) ?: [];
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        $full = $teamPhotoDir . '/' . $entry;
+        if (!is_file($full)) {
+            continue;
+        }
+        if (!preg_match('/^([a-z0-9_-]+)_.*\.(jpg|jpeg|png|gif|webp)$/i', $entry, $matches)) {
+            continue;
+        }
+        $slug = strtolower($matches[1]);
+        if (!isset($teamMembersBySlug[$slug])) {
+            continue;
+        }
+        $mtime = (int)filemtime($full);
+        if (!isset($teamPhotos[$slug]) || $mtime > $teamPhotos[$slug]['mtime']) {
+            $teamPhotos[$slug] = [
+                'name' => $entry,
+                'mtime' => $mtime,
+                'url' => 'uploads/staff_photos/' . rawurlencode($entry),
+            ];
+        }
+    }
 }
 
 $siteLogoUrl = trim((string)SITE_LOGO_URL);
@@ -659,6 +710,19 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             font-weight: 700;
             text-align: center;
             padding: 1rem;
+            overflow: hidden;
+        }
+
+        .team-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 18px;
+        }
+
+        .team-photo strong {
+            font-size: 0.95rem;
+            line-height: 1.4;
         }
 
         .contact-grid {
@@ -964,28 +1028,25 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
         </div>
     </section>
 
-    <?php
-    $teamMembers = [
-        ['name' => 'Dr TATA ASSCADA', 'title' => 'Chief of Clinic, BSc MLS', 'description' => 'Promoteur et Fondateur'],
-        ['name' => 'Dr ABENG BERNARD IDE', 'title' => 'Accoucheur, Chef Personnel', 'description' => 'Head of Maternal Care'],
-        ['name' => 'FONKEM CATHERINE', 'title' => 'SRN Pharmacy Major', 'description' => 'Pharmacy Operations Leader'],
-        ['name' => 'MAYANG MARGUERITE', 'title' => 'Infirmière, PF Vaccination', 'description' => 'Vaccination and Patient Care'],
-        ['name' => 'Dr NONG ERNEST', 'title' => 'Senior Lab Tech', 'description' => 'Laboratory Diagnostics Lead'],
-        ['name' => 'Safouratou Zad', 'title' => 'TMS, Ass Lab Major', 'description' => 'Assistant Laboratory Manager'],
-        ['name' => 'Abanda Christel', 'title' => 'Aid Soignante, Assistant Caissier et Pharmacy', 'description' => 'Patient support and pharmacy assistant'],
-    ];
-    ?>
-
     <section class="about-panel" id="team">
         <div class="section-heading"><?php echo appT('Clinical Leadership & Team', 'Leadership clinique et équipe'); ?></div>
         <div class="team-grid">
             <?php foreach ($teamMembers as $member): ?>
                 <article class="team-card">
                     <div class="team-photo">
-                        <strong><?php echo htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                        <?php if (!empty($teamPhotos[$member['slug']])): ?>
+                            <img src="<?php echo htmlspecialchars($teamPhotos[$member['slug']]['url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8'); ?> photo">
+                        <?php else: ?>
+                            <strong><?php echo htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                        <?php endif; ?>
                     </div>
                     <h3><?php echo htmlspecialchars($member['title'], ENT_QUOTES, 'UTF-8'); ?></h3>
                     <p><?php echo htmlspecialchars($member['description'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <?php if (!empty($teamPhotos[$member['slug']])): ?>
+                        <p style="margin-top:0.75rem;font-size:0.92rem;color:var(--ink-1);">
+                            <?php echo appT('Profile photo uploaded.', 'Photo de profil téléchargée.'); ?>
+                        </p>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </div>
@@ -1024,29 +1085,37 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                     <?php echo homeCsrfField(); ?>
                     <div class="photo-upload-row">
                         <div>
+                            <label for="staff_slug"><?php echo appT('Select Staff Profile', 'Sélectionner le profil du personnel'); ?></label>
+                            <select id="staff_slug" name="staff_slug" required>
+                                <option value=""><?php echo appT('Choose a team member', 'Choisir un membre de l’équipe'); ?></option>
+                                <?php foreach ($teamMembers as $member): ?>
+                                    <option value="<?php echo htmlspecialchars($member['slug'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($member['name'] . ' — ' . $member['title'], ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
                             <label for="home_file"><?php echo appT('Choose Photo', 'Choisir la photo'); ?></label>
                             <input type="file" id="home_file" name="home_file" accept="image/*" required>
                         </div>
-                        <div>
-                            <label for="photo_owner"><?php echo appT('Doctor or Staff Name', 'Nom du médecin ou du personnel'); ?></label>
-                            <input type="text" id="photo_owner" name="photo_owner" placeholder="Dr TATA ASSCADA">
-                        </div>
                     </div>
-                    <p class="upload-note"><?php echo appT('Allowed image files up to 5 MB. Uploaded files are listed to the right.', 'Fichiers image autorisés jusqu’à 5 Mo. Les fichiers téléchargés sont listés à droite.'); ?></p>
+                    <p class="upload-note"><?php echo appT('Upload a profile photo for the selected staff member. Image files only, up to 5 MB.', 'Téléchargez une photo de profil pour le membre du personnel sélectionné. Fichiers image seulement, jusqu’à 5 Mo.'); ?></p>
                     <button type="submit" name="upload_home_file"><?php echo appT('Upload Photo', 'Télécharger la photo'); ?></button>
                 </form>
             </div>
             <div class="cardish">
-                <h3 style="margin-top:0;"><?php echo appT('Recent Uploads', 'Téléchargements récents'); ?></h3>
-                <?php if (!$recentUploads): ?>
-                    <p class="upload-note"><?php echo appT('No photos uploaded yet.', 'Aucune photo téléchargée pour le moment.'); ?></p>
+                <h3 style="margin-top:0;"><?php echo appT('Team Photos', 'Photos de l’équipe'); ?></h3>
+                <?php if (empty($teamPhotos)): ?>
+                    <p class="upload-note"><?php echo appT('No team photos uploaded yet.', 'Aucune photo de l’équipe téléchargée pour le moment.'); ?></p>
                 <?php else: ?>
                     <ul class="upload-list">
-                        <?php foreach ($recentUploads as $item): ?>
+                        <?php foreach ($teamMembers as $member): ?>
                             <li>
-                                <a href="<?php echo htmlspecialchars('uploads/home_uploads/' . $item['name'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer">
-                                    <?php echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?>
-                                </a>
+                                <strong><?php echo htmlspecialchars($member['name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                <?php if (!empty($teamPhotos[$member['slug']])): ?>
+                                    — <a href="<?php echo htmlspecialchars($teamPhotos[$member['slug']]['url'], ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer"><?php echo appT('View photo', 'Voir la photo'); ?></a>
+                                <?php else: ?>
+                                    — <span class="upload-note"><?php echo appT('No photo yet', 'Pas encore de photo'); ?></span>
+                                <?php endif; ?>
                             </li>
                         <?php endforeach; ?>
                     </ul>
