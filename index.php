@@ -654,6 +654,44 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             margin-bottom: 0.9rem;
         }
 
+        .search-panel {
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 1.3rem 1.35rem;
+            background: rgba(255, 255, 255, 0.92);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 18px 40px rgba(20, 45, 68, 0.08);
+        }
+
+        .search-inline-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .search-inline-form input {
+            width: 100%;
+            padding: 1rem 1.1rem;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            outline: none;
+            font-size: 0.96rem;
+            color: var(--ink-1);
+            background: #f8fbfd;
+        }
+
+        .search-inline-form button {
+            padding: 0 1.4rem;
+            border-radius: 18px;
+            border: none;
+            background: linear-gradient(135deg, #0fb39d, #23c6d1);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            min-width: 110px;
+        }
+
         .service-card h3,
         .team-card h3 {
             margin: 0 0 0.65rem;
@@ -937,6 +975,7 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
             <a class="chip-link" href="doctor/register.php">Register Doctor</a>
             <a class="chip-link" href="staff/register.php">Register Staff</a>
             <a class="chip-link" href="public_communications.php">Communications</a>
+            <a class="chip-link" href="search.php">Search</a>
             <a class="chip-link" href="accreditation.php">Accreditation</a>
             <a class="chip-link" href="?lang=en">English</a>
             <a class="chip-link" href="?lang=fr">Francais</a>
@@ -980,6 +1019,15 @@ $canonicalUrl = $baseUrl !== '' ? $baseUrl . '/' : '';
                 <div class="v"><?php echo appT('Camp Alangerbault, Mbandjock', 'Camp Alangerbault, Mbandjock'); ?></div>
             </div>
         </aside>
+    </section>
+
+    <section class="search-panel" id="system-search">
+        <div class="section-heading"><?php echo appT('Search the clinic system', 'Rechercher dans le système de la clinique'); ?></div>
+        <p><?php echo appT('Quickly find staff, patients, drugs, groups, pages, and reports from one search box.', 'Trouvez rapidement du personnel, des patients, des médicaments, des groupes, des pages et des rapports depuis une seule barre de recherche.'); ?></p>
+        <form action="search.php" method="get" class="search-inline-form">
+            <input type="search" name="q" placeholder="<?php echo appT('Search by name, drug, group, page, report…', 'Rechercher par nom, médicament, groupe, page, rapport…'); ?>" aria-label="Search the system">
+            <button type="submit"><?php echo appT('Search', 'Rechercher'); ?></button>
+        </form>
     </section>
 
     <section class="about-panel" id="about">
