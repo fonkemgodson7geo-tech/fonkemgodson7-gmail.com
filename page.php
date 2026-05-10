@@ -39,6 +39,11 @@ if (!$page) {
 </head>
 <body class="bg-light">
 <div class="container mt-4 mb-5">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <a href="index.php">
+            <img src="<?php echo htmlspecialchars(SITE_LOGO_URL, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?>" style="max-height: 50px; max-width: 180px;">
+        </a>
+    </div>
     <a href="index.php" class="btn btn-outline-secondary btn-sm mb-3">Back Home</a>
     <?php if (!$page): ?>
         <div class="alert alert-warning">Page not found. Visit the <a href="pages.php">public pages directory</a> to see available posts.</div>

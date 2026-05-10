@@ -44,6 +44,11 @@ try {
 </head>
 <body>
 <div class="page-wrapper">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="index.php">
+            <img src="<?php echo htmlspecialchars(SITE_LOGO_URL, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(SITE_NAME, ENT_QUOTES, 'UTF-8'); ?>" style="max-height: 60px; max-width: 200px;">
+        </a>
+    </div>
     <header class="page-header">
         <h1>Public Pages</h1>
         <p>Browse our published pages for clinic news, services, policies, and important public announcements.</p>
