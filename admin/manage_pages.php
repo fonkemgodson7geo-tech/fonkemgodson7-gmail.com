@@ -86,6 +86,10 @@ try {
 </head>
 <body class="bg-light">
 <div class="container mt-4 mb-5">
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-shield-lock"></i> <strong>Admin Only:</strong> This page is restricted to administrators only. Only authorized admins can create, edit, and publish pages visible to the public.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">Page Manager</h2>
         <a href="dashboard.php" class="btn btn-outline-secondary">Back</a>
