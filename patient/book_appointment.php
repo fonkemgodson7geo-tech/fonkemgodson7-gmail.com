@@ -16,6 +16,7 @@ if ($patientName === '') {
 $appointmentDate = $_POST['appointment_date'] ?? date('Y-m-d', strtotime('+1 day'));
 $appointmentTime = $_POST['appointment_time'] ?? '09:00';
 $appointmentDay = $_POST['appointment_day'] ?? date('l', strtotime($appointmentDate));
+$serviceType = trim((string)($_POST['service_type'] ?? ($_GET['service_type'] ?? 'General Consultation')));
 $reason = trim((string)($_POST['reason'] ?? ''));
 $selectedDoctorId = (int)($_POST['doctor_id'] ?? 0);
 
@@ -35,8 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) 
     $appointmentDay = trim((string)($_POST['appointment_day'] ?? ''));
     $reason = trim((string)($_POST['reason'] ?? ''));
 
-    if ($patientName === '' || $selectedDoctorId <= 0 || $appointmentDate === '' || $appointmentTime === '' || $appointmentDay === '' || $reason === '') {
+    if ($patientName === '' || $selectedDoctorId <= 0 || $appointmentDate === '' || $appointmentTime === '' || $appointmentDay === '' || $serviceType === '' || $reason === '') {
         $error = 'Please fill in all required fields.';
+    } elseif (!in_array($serviceType, ['General Consultation', 'Video Consultation'], true)) {
+        $error = 'Please choose a valid consultation type.';
     } else {
         try {
             $pdo = getDB();
@@ -69,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) 
 
                         $notes = "Patient Name: {$patientName}\nDay: {$appointmentDay}\nTime: {$appointmentTime}\nReason: {$reason}";
                         $insertStmt = $pdo->prepare('INSERT INTO appointments (patient_id, doctor_id, appointment_date, service_type, status, notes, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
-                        $insertStmt->execute([$patientId, $selectedDoctorId, $selectedDateTime, 'General Consultation', 'pending', $notes, (int)$user['id']]);
+                        $insertStmt->execute([$patientId, $selectedDoctorId, $selectedDateTime, $serviceType, 'pending', $notes, (int)$user['id']]);
 
                         $message = 'Appointment booked successfully! Awaiting doctor confirmation.';
                         $reason = '';
@@ -297,6 +300,15 @@ try {
                 </div>
                 
                 <div class="form-group mb-3">
+                    <label for="service_type" class="form-label"><i class="bi bi-camera-video"></i> Consultation Type *</label>
+                    <select class="form-select" id="service_type" name="service_type" required>
+                        <option value="General Consultation" <?php echo $serviceType === 'General Consultation' ? 'selected' : ''; ?>>General Consultation</option>
+                        <option value="Video Consultation" <?php echo $serviceType === 'Video Consultation' ? 'selected' : ''; ?>>Video Consultation</option>
+                    </select>
+                    <small class="text-muted">Choose online video consultation for remote doctor visits.</small>
+                </div>
+
+                <div class="form-group mb-3">
                     <label for="doctor_id" class="form-label"><i class="bi bi-person-badge"></i> Select Doctor *</label>
                     <select class="form-select" id="doctor_id" name="doctor_id" required>
                         <option value="">-- Choose a doctor --</option>
@@ -315,7 +327,7 @@ try {
                 <div class="form-group mb-3">
                     <label for="reason" class="form-label"><i class="bi bi-chat-dots"></i> Reason for Appointment *</label>
                     <textarea class="form-control" id="reason" name="reason" rows="4" placeholder="Describe your symptoms or medical concern..." required><?php echo htmlspecialchars($reason, ENT_QUOTES, 'UTF-8'); ?></textarea>
-                    <small class="text-muted">This helps our doctors prepare for your visit</small>
+                    <small class="text-muted">This helps our doctors prepare for your visit.</small>
                 </div>
 
                 <div class="row">

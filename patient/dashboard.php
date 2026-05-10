@@ -309,7 +309,7 @@ $patient_id = $user['id'];
         </div>
 
         <div class="row">
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="action-card">
                     <div class="action-icon appointments">
                         <i class="bi bi-calendar-event-fill"></i>
@@ -322,7 +322,20 @@ $patient_id = $user['id'];
                 </div>
             </div>
 
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
+                <div class="action-card">
+                    <div class="action-icon appointments">
+                        <i class="bi bi-camera-video-fill"></i>
+                    </div>
+                    <h3 class="action-title">Video Consultation</h3>
+                    <p class="action-description">Start an online doctor consultation using a secure video call.</p>
+                    <a href="video_consultation.php" class="action-button btn-appointments">
+                        <i class="bi bi-play-circle"></i> Start Online
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
                 <div class="action-card">
                     <div class="action-icon records">
                         <i class="bi bi-file-earmark-medical"></i>
@@ -335,7 +348,7 @@ $patient_id = $user['id'];
                 </div>
             </div>
 
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="action-card">
                     <div class="action-icon payments">
                         <i class="bi bi-credit-card"></i>
