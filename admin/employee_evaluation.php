@@ -36,16 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_evaluation']))
         try {
             $overall = round(($assiduity + $punctuality + $productivity) / 3, 1);
             
-            $stmt = $pdo->prepare('INSERT INTO employee_evaluations 
+            $stmt = $pdo->prepare('INSERT OR REPLACE INTO employee_evaluations 
                 (employee_id, evaluation_date, evaluated_by, assiduity_rating, punctuality_rating, productivity_rating, 
                  illness_days, permission_days, absence_days, sanctions, suspension, query_letter, overall_rating, notes) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE 
-                assiduity_rating = VALUES(assiduity_rating), punctuality_rating = VALUES(punctuality_rating), 
-                productivity_rating = VALUES(productivity_rating), illness_days = VALUES(illness_days), 
-                permission_days = VALUES(permission_days), absence_days = VALUES(absence_days), 
-                sanctions = VALUES(sanctions), suspension = VALUES(suspension), query_letter = VALUES(query_letter), 
-                overall_rating = VALUES(overall_rating), notes = VALUES(notes)');
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             
             $stmt->execute([$employee_id, $evaluation_date, $_SESSION['user']['id'], $assiduity, $punctuality, $productivity, 
                            $illness_days, $permission_days, $absence_days, $sanctions, $suspension, $query_letter, $overall, $notes]);
