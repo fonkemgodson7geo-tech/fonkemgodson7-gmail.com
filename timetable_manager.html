@@ -240,6 +240,32 @@
             font-size: 0.9em;
         }
 
+        .cell-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .cell-display {
+            width: 100%;
+            min-height: 1.4em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .shift-select.hidden {
+            display: none;
+        }
+
+        td.clickable {
+            cursor: pointer;
+        }
+
         .day-header {
             display: flex;
             flex-direction: column;
@@ -930,19 +956,21 @@
                                 `pun-${value}`) : '';
 
                     row += `
-                        <td class="${shiftClass}${value ? ' selected-cell' : ''}">
-                            <select onchange="updateShift(this, '${month}', '${deptKey}', '${date}', '${worker}')" class="shift-select" onfocus="focusCell(this)" onblur="blurCell(this)">
-                                <option value=""></option>
-                                <option value="M" ${value === 'M' ? 'selected' : ''}>M</option>
-                                <option value="A" ${value === 'A' ? 'selected' : ''}>A</option>
-                                <option value="N" ${value === 'N' ? 'selected' : ''}>N</option>
-                                <option value="R" ${value === 'R' ? 'selected' : ''}>R</option>
-                                <option value="OFF" ${value === 'OFF' ? 'selected' : ''}>OFF</option>
-                                <option value="SICK" ${value === 'SICK' ? 'selected' : ''}>SICK</option>
-                                <option value="LATE" ${value === 'LATE' ? 'selected' : ''}>LATE</option>
-                                <option value="ABSENT" ${value === 'ABSENT' ? 'selected' : ''}>ABSENT</option>
-                            </select>
-                            ${value ? `<div class="cell-label">${value}</div>` : ''}
+                        <td class="${shiftClass}${value ? ' selected-cell clickable' : ''}" onclick="activateCell(this)">
+                            <div class="cell-wrapper">
+                                <div class="cell-display">${value || ''}</div>
+                                <select onchange="updateShift(this, '${month}', '${deptKey}', '${date}', '${worker}')" class="shift-select ${value ? 'hidden' : ''}" onfocus="focusCell(this)" onblur="blurCell(this)">
+                                    <option value=""></option>
+                                    <option value="M" ${value === 'M' ? 'selected' : ''}>M</option>
+                                    <option value="A" ${value === 'A' ? 'selected' : ''}>A</option>
+                                    <option value="N" ${value === 'N' ? 'selected' : ''}>N</option>
+                                    <option value="R" ${value === 'R' ? 'selected' : ''}>R</option>
+                                    <option value="OFF" ${value === 'OFF' ? 'selected' : ''}>OFF</option>
+                                    <option value="SICK" ${value === 'SICK' ? 'selected' : ''}>SICK</option>
+                                    <option value="LATE" ${value === 'LATE' ? 'selected' : ''}>LATE</option>
+                                    <option value="ABSENT" ${value === 'ABSENT' ? 'selected' : ''}>ABSENT</option>
+                                </select>
+                            </div>
                         </td>`;
                 }
 
@@ -1000,6 +1028,18 @@
             const td = el.closest('td');
             if (td) {
                 td.classList.remove('focused-cell');
+            }
+        }
+
+        function activateCell(td) {
+            const select = td.querySelector('select.shift-select');
+            const display = td.querySelector('.cell-display');
+            if (!select || !display) return;
+
+            if (select.classList.contains('hidden')) {
+                select.classList.remove('hidden');
+                display.style.display = 'none';
+                select.focus();
             }
         }
 
