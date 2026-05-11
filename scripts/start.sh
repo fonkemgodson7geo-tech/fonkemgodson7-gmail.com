@@ -15,7 +15,7 @@ if [ "$DB_TYPE_VALUE" = "sqlite" ]; then
         php setup_sqlite.php
     else
         # Self-heal partially initialized SQLite databases by checking core tables.
-        if ! php -r "require 'config/config.php'; \$pdo = new PDO('sqlite:' . DB_FILE); \$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); \$required = ['users', 'doctors', 'reports', 'audit_logs']; foreach (\$required as \$table) { \$stmt = \$pdo->prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name=?\"); \$stmt->execute([\$table]); if (!\$stmt->fetchColumn()) { exit(1); } }"; then
+        if ! php -r "require 'config/config.php'; \$pdo = new PDO('sqlite:' . DB_FILE); \$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); \$required = ['users', 'doctors', 'reports', 'audit_logs', 'employee_evaluations']; foreach (\$required as \$table) { \$stmt = \$pdo->prepare(\"SELECT name FROM sqlite_master WHERE type='table' AND name=?\"); \$stmt->execute([\$table]); if (!\$stmt->fetchColumn()) { exit(1); } }"; then
             echo "Detected missing SQLite tables. Re-running setup_sqlite.php"
             php setup_sqlite.php
         fi
