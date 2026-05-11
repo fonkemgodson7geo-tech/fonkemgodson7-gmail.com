@@ -618,6 +618,28 @@ CREATE TABLE shift_timetables (
     FOREIGN KEY (generated_by) REFERENCES users(id)
 );
 
+-- Employee Evaluations
+CREATE TABLE employee_evaluations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    evaluation_date DATE NOT NULL,
+    evaluated_by INTEGER NOT NULL,
+    assiduity_rating REAL CHECK (assiduity_rating >= 1 AND assiduity_rating <= 5),
+    punctuality_rating REAL CHECK (punctuality_rating >= 1 AND punctuality_rating <= 5),
+    productivity_rating REAL CHECK (productivity_rating >= 1 AND productivity_rating <= 5),
+    illness_days INTEGER DEFAULT 0,
+    permission_days INTEGER DEFAULT 0,
+    absence_days INTEGER DEFAULT 0,
+    sanctions TEXT,
+    suspension INTEGER DEFAULT 0,
+    query_letter TEXT,
+    overall_rating REAL,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES users(id),
+    FOREIGN KEY (evaluated_by) REFERENCES users(id)
+);
+
 -- Insert default admin user
 INSERT INTO users (username, password, email, role, first_name, last_name) VALUES
 ('admie', '\$2y\$12\$xd/DoVTXkuSTI0UzD7lfQuCjJXTOmxmsPyAM3UEEworY8R1TjUNMa', 'admin@clinic.com', 'admin', 'Admin', 'User');
