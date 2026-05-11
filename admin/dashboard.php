@@ -442,6 +442,27 @@ try {
                     </div>
                 </div>
             </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card reports">
+                    <div class="stat-icon reports">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <div class="stat-title">Employee Evaluations</div>
+                    <div class="stat-number"><?php
+                        try {
+                            $pdo = getDB();
+                            $stmt = $pdo->query("SELECT COUNT(*) FROM employee_evaluations");
+                            echo $stmt->fetchColumn();
+                        } catch (PDOException $e) {
+                            echo '0';
+                        }
+                    ?></div>
+                    <div class="stat-footer">
+                        <a href="employee_evaluation_enhanced.php" class="action-link">Open Evaluation →</a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row">

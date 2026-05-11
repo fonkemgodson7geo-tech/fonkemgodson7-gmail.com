@@ -8,15 +8,17 @@ $message = '';
 $error = '';
 $pdo = getDB();
 
-// Handle form submission via AJAX or POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Handle form submission and save evaluation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_evaluation'])) {
     verifyCsrf();
     
+    $employee_id = (int)($_POST['employee_id'] ?? 0);
     $empName = trim($_POST['empName'] ?? '');
     $empId = trim($_POST['empId'] ?? '');
     $dept = trim($_POST['dept'] ?? '');
     $period = trim($_POST['period'] ?? '');
     $evaluator = trim($_POST['evaluator'] ?? '');
+    $evaluation_date = trim($_POST['evaluation_date'] ?? date('Y-m-d'));
     
     $assiduity = (float)($_POST['assiduity'] ?? 0);
     $punctuality = (float)($_POST['punctuality'] ?? 0);
@@ -40,29 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $commitPct = (int)($_POST['commitPct'] ?? 0);
     $overallScore = (float)($_POST['overallScore'] ?? 0);
     
-    try {
-        // Find or create employee by name
-        $stmt = $pdo->prepare('SELECT id FROM users WHERE (first_name || " " || last_name) LIKE ? OR username LIKE ? LIMIT 1');
-        $stmt->execute(["%$empName%", "%$empId%"]);
-        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$employee) {
-            $error = 'Employee not found in system.';
-        } else {
-            $employee_id = $employee['id'];
+    if ($employee_id <= 0) {
+        $error = 'Please select an employee from the list.';
+    } elseif ($assiduity < 1 || $assiduity > 5 || $punctuality < 1 || $punctuality > 5 || $productivity < 1 || $productivity > 5) {
+        $error = 'Ratings must be between 1 and 5.';
+    } else {
+        try {
+            $notes = "Dept: $dept | Period: $period | Punch accuracy: $punchAccuracy% | Deployment: $deployFlex/5 | Commit: $commitPct% | Discipline note: $discNote";
             
-            // Insert evaluation
             $stmt = $pdo->prepare('INSERT OR REPLACE INTO employee_evaluations 
                 (employee_id, evaluation_date, evaluated_by, assiduity_rating, punctuality_rating, 
                  productivity_rating, illness_days, permission_days, absence_days, sanctions, 
                  suspension, query_letter, overall_rating, notes) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             
-            $notes = "Dept: $dept | Period: $period | Punch accuracy: $punchAccuracy% | Deployment: $deployFlex/5 | Commit: $commitPct%";
-            
             $stmt->execute([
                 $employee_id,
-                date('Y-m-d'),
+                $evaluation_date,
                 $_SESSION['user']['id'],
                 $assiduity,
                 $punctuality,
@@ -78,14 +74,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             $message = "✅ Evaluation for {$empName} ({$empId}) saved successfully with overall score {$overallScore}/5";
+        } catch (Exception $e) {
+            $error = 'Error saving evaluation: ' . $e->getMessage();
         }
-    } catch (Exception $e) {
-        $error = 'Error saving evaluation: ' . $e->getMessage();
     }
 }
 
 // Get list of employees for reference
 $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM users WHERE role != 'patient' ORDER BY first_name, last_name")->fetchAll(PDO::FETCH_ASSOC);
+$evaluations = $pdo->query("SELECT e.*, u.first_name, u.last_name, u.username, eb.first_name AS eval_first, eb.last_name AS eval_last 
+                           FROM employee_evaluations e 
+                           JOIN users u ON e.employee_id = u.id 
+                           JOIN users eb ON e.evaluated_by = eb.id 
+                           ORDER BY e.evaluation_date DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 <!DOCTYPE html>
@@ -351,6 +352,39 @@ $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM 
             display: none;
         }
 
+        @media print {
+            body {
+                background: white;
+                color: #000;
+            }
+            .evaluation-container {
+                box-shadow: none;
+                border-radius: 0;
+                width: 100%;
+            }
+            .eval-header, .action-buttons, .input-row, .two-col-grid, .absence-grid, .disciplinary-card, .info-card, .criteria-table textarea, .btn-primary, .btn-secondary, .alert {
+                display: none !important;
+            }
+            .form-panel {
+                padding: 0;
+                margin: 0;
+                border: none;
+            }
+            .result-area {
+                display: block !important;
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                font-family: Arial, sans-serif;
+                font-size: 12pt;
+            }
+            .result-area h3, .result-area h4, .result-area p, .result-area ul, .result-area li {
+                color: #000;
+            }
+        }
+
         @media (max-width: 700px) {
             .form-panel {
                 padding: 1rem;
@@ -383,12 +417,25 @@ $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM 
                 <div class="info-card">
                     <h3>👤 Employee & Punch data</h3>
                     <div class="input-row">
+                        <label>Employee</label>
+                        <select id="employee_select" name="employee_id" required>
+                            <option value="">Select employee...</option>
+                            <?php foreach ($employees as $emp): ?>
+                                <option value="<?php echo $emp['id']; ?>"><?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name'] . ' (' . $emp['username'] . ' / ' . ucfirst($emp['role']) . ')'); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="input-row">
                         <label>Full name</label>
-                        <input type="text" id="empName" name="empName" placeholder="e.g., Sarah Johnson">
+                        <input type="text" id="empName" name="empName" placeholder="e.g., Sarah Johnson" readonly>
                     </div>
                     <div class="input-row">
                         <label>Employee ID / Badge</label>
-                        <input type="text" id="empId" name="empId" placeholder="HOS-2134">
+                        <input type="text" id="empId" name="empId" placeholder="HOS-2134" readonly>
+                    </div>
+                    <div class="input-row">
+                        <label>Evaluation Date</label>
+                        <input type="date" id="evaluation_date" name="evaluation_date" value="<?php echo date('Y-m-d'); ?>">
                     </div>
                     <div class="input-row">
                         <label>Department</label>
@@ -479,13 +526,39 @@ $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM 
 
             <div class="action-buttons">
                 <button type="button" class="btn-secondary" id="resetBtn">Reset to demo</button>
+                <button type="button" class="btn-secondary" id="printBtn">🖨️ Print Sheet</button>
                 <button type="button" class="btn-primary" id="generateEvalBtn">📊 Generate complete evaluation sheet</button>
+                <button type="submit" class="btn-primary" name="submit_evaluation" id="saveEvalBtn">💾 Save Evaluation</button>
             </div>
 
             <div id="resultOutput" class="result-area"></div>
 
             <div style="font-size:13px; text-align:center; margin-top:25px; color:#6f8f9f;">
                 ✅ Commit plan & final approval section included in report below
+            </div>
+
+            <div class="info-card" style="margin-top: 24px;">
+                <h3>Recent Evaluations</h3>
+                <?php if (empty($evaluations)): ?>
+                    <p class="text-muted">No evaluations have been recorded yet.</p>
+                <?php else: ?>
+                    <table class="criteria-table">
+                        <thead>
+                            <tr><th>Date</th><th>Employee</th><th>Evaluator</th><th>Overall</th><th>Notes</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($evaluations as $eval): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($eval['evaluation_date']); ?></td>
+                                    <td><?php echo htmlspecialchars($eval['first_name'] . ' ' . $eval['last_name'] . ' (' . $eval['username'] . ')'); ?></td>
+                                    <td><?php echo htmlspecialchars($eval['eval_first'] . ' ' . $eval['eval_last']); ?></td>
+                                    <td><?php echo htmlspecialchars(number_format((float)$eval['overall_rating'], 1)); ?></td>
+                                    <td><?php echo htmlspecialchars(mb_strimwidth($eval['notes'], 0, 80, '...')); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -612,11 +685,19 @@ $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM 
     }
     
     function resetDemo() {
-        document.getElementById('empName').value = "Dr. Elena Vasquez";
-        document.getElementById('empId').value = "MD-8821";
+        const employeeSelect = document.getElementById('employee_select');
+        if (employeeSelect.options.length > 1) {
+            employeeSelect.selectedIndex = 1;
+            employeeSelect.dispatchEvent(new Event('change'));
+        } else {
+            employeeSelect.value = '';
+            document.getElementById('empName').value = "";
+            document.getElementById('empId').value = "";
+        }
         document.getElementById('dept').value = "Emergency Medicine";
         document.getElementById('period').value = "March 2026 - June 2026";
         document.getElementById('evaluator').value = "HR Director";
+        document.getElementById('evaluation_date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('punchAccuracy').value = 96;
         document.getElementById('buddyPunch').value = 0;
         document.getElementById('deployFlex').value = 4;
@@ -642,6 +723,30 @@ $employees = $pdo->query("SELECT id, username, first_name, last_name, role FROM 
     
     document.getElementById('generateEvalBtn').addEventListener('click', generateEvaluation);
     document.getElementById('resetBtn').addEventListener('click', resetDemo);
+    document.getElementById('printBtn').addEventListener('click', function () {
+        const resultDiv = document.getElementById('resultOutput');
+        if (resultDiv.style.display === 'none' || !resultDiv.innerHTML.trim()) {
+            generateEvaluation();
+        }
+        window.print();
+    });
+    document.getElementById('employee_select').addEventListener('change', function () {
+        const selected = this.options[this.selectedIndex];
+        if (selected && selected.value) {
+            const text = selected.text;
+            const match = text.match(/^(.+?) \(([^\/]+) \/ /);
+            if (match) {
+                document.getElementById('empName').value = match[1].trim();
+                document.getElementById('empId').value = match[2].trim();
+            }
+        } else {
+            document.getElementById('empName').value = '';
+            document.getElementById('empId').value = '';
+        }
+    });
+    document.getElementById('evaluationForm').addEventListener('submit', function () {
+        generateEvaluation();
+    });
     window.onload = () => { resetDemo(); };
 </script>
 </body>
