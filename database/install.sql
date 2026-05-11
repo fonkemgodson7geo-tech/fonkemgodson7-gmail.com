@@ -208,6 +208,51 @@ CREATE TABLE payroll_calculations (
     UNIQUE KEY uniq_period_user (payroll_period_id, user_id)
 );
 
+-- Scheduler module
+CREATE TABLE scheduler_groups (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE scheduler_teams (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    lead_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES scheduler_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (lead_id) REFERENCES users(id)
+);
+
+CREATE TABLE scheduler_team_members (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role VARCHAR(100),
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE scheduler_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT NOT NULL,
+    day_of_week INT NOT NULL,
+    shift_type VARCHAR(100) NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    location VARCHAR(255),
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
 -- Certificates
 CREATE TABLE certificates (
     id INT AUTO_INCREMENT PRIMARY KEY,

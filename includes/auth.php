@@ -425,6 +425,98 @@ function _syncDesignatedAdminCredentials(PDO $pdo): void {
     }
 }
 
+function _ensureSchedulerSchema(PDO $pdo): void {
+    if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_teams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            lead_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (group_id) REFERENCES scheduler_groups(id) ON DELETE CASCADE,
+            FOREIGN KEY (lead_id) REFERENCES users(id)
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_team_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            role TEXT,
+            joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_schedules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL,
+            day_of_week INTEGER NOT NULL,
+            shift_type TEXT NOT NULL,
+            start_time TEXT,
+            end_time TEXT,
+            location TEXT,
+            created_by INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )");
+    } else {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_groups (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            description TEXT,
+            created_by INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_teams (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            group_id INT NOT NULL,
+            name VARCHAR(150) NOT NULL,
+            description TEXT,
+            lead_id INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (group_id) REFERENCES scheduler_groups(id) ON DELETE CASCADE,
+            FOREIGN KEY (lead_id) REFERENCES users(id)
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_team_members (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            team_id INT NOT NULL,
+            user_id INT NOT NULL,
+            role VARCHAR(100),
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS scheduler_schedules (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            team_id INT NOT NULL,
+            day_of_week INT NOT NULL,
+            shift_type VARCHAR(100) NOT NULL,
+            start_time TIME,
+            end_time TIME,
+            location VARCHAR(255),
+            created_by INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES scheduler_teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )");
+    }
+}
+
 // Function to get PDO connection
 function getDB() {
     static $pdo = null;
@@ -437,11 +529,13 @@ function getDB() {
                 // Enable foreign keys for SQLite
                 $pdo->exec('PRAGMA foreign_keys = ON');
                 _sqliteEnsureIdentitySchema($pdo);
+                _ensureSchedulerSchema($pdo);
                 _syncDesignatedAdminCredentials($pdo);
             } else {
                 // MySQL connection (legacy)
                 $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
                 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                _ensureSchedulerSchema($pdo);
                 _syncDesignatedAdminCredentials($pdo);
             }
         } catch (PDOException $e) {

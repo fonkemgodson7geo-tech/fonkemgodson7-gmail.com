@@ -5,7 +5,24 @@ require_once '../includes/auth.php';
 requireDesignatedAdmin();
 
 $user = $_SESSION['user'];
+
+$upcomingTimetable = [];
+$upcomingScheduler = [];
+try {
+    $pdo = getDB();
+    $stmt = $pdo->prepare("SELECT shift_date, shift_name, note AS staff, worker_group FROM shift_timetables WHERE shift_date >= ? ORDER BY shift_date ASC, shift_name ASC LIMIT 14");
+    $stmt->execute([date('Y-m-d')]);
+    $upcomingTimetable = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $scheduleStmt = $pdo->prepare("SELECT s.*, t.name AS team_name, g.name AS group_name FROM scheduler_schedules s JOIN scheduler_teams t ON s.team_id = t.id JOIN scheduler_groups g ON t.group_id = g.id ORDER BY s.day_of_week ASC, s.start_time ASC LIMIT 8");
+    $scheduleStmt->execute();
+    $upcomingScheduler = $scheduleStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $upcomingTimetable = [];
+    $upcomingScheduler = [];
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -110,6 +127,45 @@ $user = $_SESSION['user'];
             border-left-color: #6f42c1;
         }
 
+        .timetable-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-top: 1.5rem;
+        }
+
+        .timetable-preview h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .timetable-preview table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .timetable-preview th,
+        .timetable-preview td {
+            border: 1px solid #e9ecef;
+            padding: 0.75rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .timetable-preview th {
+            background: #f8f9fa;
+        }
+
+        .timetable-preview tbody tr:nth-child(even) {
+            background: #fbfcfd;
+        }
+
+        .timetable-preview .small-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
         .stat-icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
@@ -208,6 +264,9 @@ $user = $_SESSION['user'];
                     </a>
                     <a class="nav-link" href="timetable.php">
                         <i class="bi bi-calendar3"></i> Timetable
+                    </a>
+                    <a class="nav-link" href="scheduler.php">
+                        <i class="bi bi-calendar-plus"></i> Scheduler
                     </a>
                     <a class="nav-link" href="manage_groups.php">
                         <i class="bi bi-diagram-3"></i> Patient Groups
@@ -365,6 +424,84 @@ $user = $_SESSION['user'];
                     <div class="stat-footer">
                         <a href="timetable.php" class="action-link">Generate & View →</a>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="timetable-preview">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2>Upcoming Timetable</h2>
+                        <a href="timetable.php" class="action-link">Open Timetable →</a>
+                    </div>
+                    <?php if ($upcomingTimetable): ?>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Staff</th>
+                                        <th>Shift</th>
+                                        <th>Group</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($upcomingTimetable as $row): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars(date('M d, Y', strtotime($row['shift_date'])), ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['staff'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['shift_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['worker_group'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-muted">No upcoming timetable entries found. Generate the timetable to display it here.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="timetable-preview">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2>Scheduler Preview</h2>
+                        <a href="scheduler.php" class="action-link">Open Scheduler →</a>
+                    </div>
+                    <?php if ($upcomingScheduler): ?>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Group</th>
+                                        <th>Team</th>
+                                        <th>Day</th>
+                                        <th>Shift</th>
+                                        <th>Time</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($upcomingScheduler as $row): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($row['group_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['team_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][(int)$row['day_of_week']] ?? 'Unknown', ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['shift_type'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars(trim((string)$row['start_time'] . ' — ' . $row['end_time']), ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><?php echo htmlspecialchars($row['location'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-muted">No team shift schedules found yet. Create scheduler assignments to populate this preview.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
