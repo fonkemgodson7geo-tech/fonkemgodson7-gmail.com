@@ -265,6 +265,9 @@ try {
                     <a class="nav-link" href="timetable.php">
                         <i class="bi bi-calendar3"></i> Timetable
                     </a>
+                    <a class="nav-link" href="../timetable_manager.html">
+                        <i class="bi bi-layout-text-window-reverse"></i> Timetable Manager
+                    </a>
                     <a class="nav-link" href="scheduler.php">
                         <i class="bi bi-calendar-plus"></i> Scheduler
                     </a>
@@ -423,6 +426,19 @@ try {
                     ?></div>
                     <div class="stat-footer">
                         <a href="timetable.php" class="action-link">Generate & View →</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card timetable">
+                    <div class="stat-icon timetable">
+                        <i class="bi bi-layout-text-window-reverse"></i>
+                    </div>
+                    <div class="stat-title">Timetable Manager</div>
+                    <div class="stat-number">&ndash;</div>
+                    <div class="stat-footer">
+                        <a href="../timetable_manager.html" class="action-link">Open Manager →</a>
                     </div>
                 </div>
             </div>
