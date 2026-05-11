@@ -1,10 +1,12 @@
 #!/bin/sh
-set -eu
+set -eux
 
 PORT_VALUE="${PORT:-10000}"
 DB_TYPE_VALUE="${DB_TYPE:-sqlite}"
 DB_FILE_VALUE="${DB_FILE:-database/clinic.db}"
 AUTO_SETUP_DB_VALUE="${AUTO_SETUP_DB:-1}"
+
+echo "Starting application with PORT=$PORT_VALUE DB_TYPE=$DB_TYPE_VALUE DB_FILE=$DB_FILE_VALUE AUTO_SETUP_DB=$AUTO_SETUP_DB_VALUE"
 
 mkdir -p uploads uploads/photos uploads/home_uploads
 

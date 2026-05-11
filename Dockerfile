@@ -5,16 +5,18 @@ RUN apk add --no-cache file
 
 # Build pdo_sqlite (needed for SQLite DB support)
 RUN apk add --no-cache --virtual .build-deps \
-        autoconf \
-        g++ \
-        gcc \
-        make \
-        pkgconf \
-        sqlite-dev \
+    autoconf \
+    g++ \
+    gcc \
+    make \
+    pkgconf \
+    sqlite-dev \
     && docker-php-ext-install -j"$(nproc)" pdo_sqlite \
     && apk del .build-deps
 
 WORKDIR /app
+ENV PORT=10000
+ENV AUTO_SETUP_DB=1
 COPY . /app
 
 RUN mkdir -p /app/database /app/uploads /app/uploads/photos \
