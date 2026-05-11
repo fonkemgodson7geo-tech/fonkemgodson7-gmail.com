@@ -113,7 +113,7 @@ $evaluations = $pdo->query("SELECT e.*, u.first_name, u.last_name, u.username, e
                     </div>
                     <div class="card-body">
                         <form method="post">
-                            <?php echo generateCsrfToken(); ?>
+                            <?php echo csrfField(); ?>
                             
                             <div class="mb-3">
                                 <label for="employee_id" class="form-label">Select Employee</label>
