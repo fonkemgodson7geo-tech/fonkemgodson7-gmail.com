@@ -1,0 +1,145 @@
+{
+    "month": "2026-05",
+    "data": [
+        {
+            "date": "2026-05-01",
+            "staff": "Abeng",
+            "shift": "M",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-01",
+            "staff": "Mayan",
+            "shift": "A",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-01",
+            "staff": "Nloga",
+            "shift": "N",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-01",
+            "staff": "Favour",
+            "shift": "R",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-02",
+            "staff": "Abeng",
+            "shift": "A",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-02",
+            "staff": "Mayan",
+            "shift": "N",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-02",
+            "staff": "Nloga",
+            "shift": "R",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-02",
+            "staff": "Favour",
+            "shift": "M",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-03",
+            "staff": "Abeng",
+            "shift": "N",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-03",
+            "staff": "Mayan",
+            "shift": "R",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-03",
+            "staff": "Nloga",
+            "shift": "M",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-03",
+            "staff": "Favour",
+            "shift": "A",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-04",
+            "staff": "Abeng",
+            "shift": "R",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-04",
+            "staff": "Mayan",
+            "shift": "M",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-04",
+            "staff": "Nloga",
+            "shift": "A",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-04",
+            "staff": "Favour",
+            "shift": "N",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-05",
+            "staff": "Abeng",
+            "shift": "M",
+            "permission": "",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-05",
+            "staff": "Wiltite",
+            "shift": "",
+            "permission": "OFF",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-06",
+            "staff": "Kadija",
+            "shift": "",
+            "permission": "SICK",
+            "punishment": ""
+        },
+        {
+            "date": "2026-05-07",
+            "staff": "Nyanze",
+            "shift": "",
+            "permission": "",
+            "punishment": "LATE"
+        }
+    ]
+}

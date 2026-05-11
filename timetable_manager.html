@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Duty Roster Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .login-box {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .app-content {
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .controls input[type="month"],
+        .controls select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .timetable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .timetable th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .timetable tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .timetable tr:hover {
+            background: #e8f4f8;
+        }
+
+        .timetable select {
+            width: 100%;
+            border: 1px solid #ddd;
+            padding: 4px;
+            border-radius: 3px;
+        }
+
+        /* Shift colors */
+        .shift-M { background-color: #87CEEB; color: #000; }
+        .shift-A { background-color: #90EE90; color: #000; }
+        .shift-N { background-color: #001a4d; color: #fff; }
+        .shift-R { background-color: #FFB347; color: #000; }
+        .perm-OFF { background-color: #7cb342; color: #fff; }
+        .perm-SICK { background-color: #7cb342; color: #fff; }
+        .pun-LATE { background-color: #d32f2f; color: #fff; }
+        .pun-ABSENT { background-color: #d32f2f; color: #fff; }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .legend h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border-radius: 3px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert.info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .staff-list {
+            columns: 3;
+            column-gap: 20px;
+            margin-top: 10px;
+        }
+
+        .staff-item {
+            background: #f9f9f9;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 3px solid #667eea;
+        }
+
+        @media print {
+            button, input[type="month"], .controls {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            resize: vertical;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            margin: -15px -15px 0 0;
+        }
+
+        .close-btn:hover {
+            color: #000;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hospital Duty Roster Management</h1>
+            <p>Manage staff schedules efficiently</p>
+        </div>
+
+        <div class="content">
+            <!-- Login Section -->
+            <div id="loginBox" class="login-box">
+                <h2>Administrator Login</h2>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter username" value="admin">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter password" value="1234">
+                </div>
+                <button onclick="login()">Login</button>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    Demo: admin / 1234
+                </div>
+            </div>
+
+            <!-- App Section (hidden until login) -->
+            <div id="app" class="app-content">
+                <div id="alert"></div>
+
+                <div class="controls">
+                    <div style="display: flex; gap: 10px; flex: 1; min-width: 250px;">
+                        <div style="flex: 1;">
+                            <label for="monthPicker" style="display: block; margin-bottom: 5px; font-weight: 600;">
+                                Select Month:
+                            </label>
+                            <input type="month" id="monthPicker" value="2026-05">
+                        </div>
+                    </div>
+
+                    <button onclick="loadTimetable()">Load Timetable</button>
+                    <button onclick="autoGenerateTimetable()">Auto Generate</button>
+                    <button onclick="importFromJSON()">Import JSON</button>
+                    <button onclick="exportToExcel()">Export Excel</button>
+                    <button onclick="window.print()">Print</button>
+                    <button class="secondary" onclick="logout()">Logout</button>
+                </div>
+
+                <!-- Timetable -->
+                <div style="overflow-x: auto;">
+                    <table id="table" class="timetable"></table>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <h3>Legend</h3>
+                    <div class="legend-item">
+                        <span class="legend-color shift-M"></span>M = Morning (09:00-15:00)
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color shift-A"></span>A = Afternoon (15:00-21:00)
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color shift-N"></span>N = Night (21:00-09:00)
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color shift-R"></span>R = Rest Day
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color perm-OFF"></span>OFF = Day Off
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color perm-SICK"></span>SICK = Sick Leave
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color pun-LATE"></span>LATE = Late
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color pun-ABSENT"></span>ABSENT = Absent
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeImportModal()">&times;</button>
+            <h2>Import Timetable from JSON</h2>
+            <textarea id="jsonInput" placeholder="Paste JSON timetable data here..."></textarea>
+            <div style="margin-top: 15px;">
+                <button onclick="processJSONImport()">Import Data</button>
+                <button class="secondary" onclick="closeImportModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const staffList = [
+            "Abeng", "Mayan", "Nloga", "Favour",
+            "Wiltite", "Kadija", "Nyanze",
+            "Mvogo", "Nagayena", "Ndong", "Zad", "Florinda"
+        ];
+
+        let currentData = [];
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.innerHTML = `<div class="alert ${type}">${message}</div>`;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === '1234') {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                showAlert('Login successful! Ready to manage timetable.', 'success');
+                loadTimetable();
+            } else {
+                showAlert('Invalid username or password', 'error');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = '1234';
+            showAlert('Logged out successfully', 'success');
+        }
+
+        function loadTimetable() {
+            const month = document.getElementById('monthPicker').value;
+            if (!month) {
+                showAlert('Please select a month', 'error');
+                return;
+            }
+
+            renderTimetable(month, []);
+            showAlert(`Timetable loaded for ${month}`, 'success');
+        }
+
+        function renderTimetable(month, data) {
+            currentData = data;
+            const table = document.getElementById('table');
+            table.innerHTML = '';
+
+            const [year, monthNum] = month.split('-');
+            const daysInMonth = new Date(year, monthNum, 0).getDate();
+
+            let header = '<tr><th>Staff</th>';
+            for (let i = 1; i <= daysInMonth; i++) {
+                header += `<th>${i}</th>`;
+            }
+            header += '</tr>';
+            table.innerHTML += header;
+
+            staffList.forEach(staff => {
+                let row = `<tr><td><strong>${staff}</strong></td>`;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const record = data.find(x => x.staff === staff && x.date === date) || {};
+                    const value = record.shift || record.permission || record.punishment || '';
+
+                    const shiftClass = value ? 
+                        (value === 'M' || value === 'A' || value === 'N' || value === 'R' ? `shift-${value}` :
+                         value === 'OFF' || value === 'SICK' ? `perm-${value}` :
+                         `pun-${value}`) : '';
+
+                    row += `
+                        <td class="${shiftClass}">
+                            <select onchange="updateShift(this, '${date}', '${staff}')" class="shift-select">
+                                <option value=""></option>
+                                <option value="M" ${value === 'M' ? 'selected' : ''}>M</option>
+                                <option value="A" ${value === 'A' ? 'selected' : ''}>A</option>
+                                <option value="N" ${value === 'N' ? 'selected' : ''}>N</option>
+                                <option value="R" ${value === 'R' ? 'selected' : ''}>R</option>
+                                <option value="OFF" ${value === 'OFF' ? 'selected' : ''}>OFF</option>
+                                <option value="SICK" ${value === 'SICK' ? 'selected' : ''}>SICK</option>
+                                <option value="LATE" ${value === 'LATE' ? 'selected' : ''}>LATE</option>
+                                <option value="ABSENT" ${value === 'ABSENT' ? 'selected' : ''}>ABSENT</option>
+                            </select>
+                        </td>`;
+                }
+
+                row += '</tr>';
+                table.innerHTML += row;
+            });
+        }
+
+        function updateShift(el, date, staff) {
+            const value = el.value;
+
+            let record = currentData.find(x => x.staff === staff && x.date === date);
+            if (!record) {
+                record = { date, staff, shift: '', permission: '', punishment: '' };
+                currentData.push(record);
+            }
+
+            if (['M', 'A', 'N', 'R'].includes(value)) {
+                record.shift = value;
+                record.permission = '';
+                record.punishment = '';
+            } else if (['OFF', 'SICK'].includes(value)) {
+                record.shift = '';
+                record.permission = value;
+                record.punishment = '';
+            } else if (['LATE', 'ABSENT'].includes(value)) {
+                record.shift = '';
+                record.permission = '';
+                record.punishment = value;
+            } else {
+                record.shift = '';
+                record.permission = '';
+                record.punishment = '';
+            }
+
+            showAlert(`Updated ${staff} on ${date} to ${value || 'empty'}`, 'success');
+        }
+
+        function autoGenerateTimetable() {
+            const month = document.getElementById('monthPicker').value;
+            if (!month) {
+                showAlert('Please select a month', 'error');
+                return;
+            }
+
+            const [year, monthNum] = month.split('-');
+            const daysInMonth = new Date(year, monthNum, 0).getDate();
+
+            const newData = [];
+
+            staffList.forEach((staff, index) => {
+                let prevShift = '';
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                    const shifts = ['M', 'A', 'N', 'R'];
+                    let shift = shifts.find(s => !(prevShift === 'N' && (s === 'M' || s === 'A'))) || 'R';
+
+                    prevShift = shift;
+
+                    newData.push({
+                        date,
+                        staff,
+                        shift,
+                        permission: '',
+                        punishment: ''
+                    });
+                }
+            });
+
+            currentData = newData;
+            renderTimetable(month, newData);
+            showAlert(`Auto-generated timetable for ${month} with ${newData.length} records`, 'success');
+        }
+
+        function importFromJSON() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('active');
+            document.getElementById('jsonInput').value = '';
+        }
+
+        function processJSONImport() {
+            const jsonText = document.getElementById('jsonInput').value;
+            try {
+                const importedData = JSON.parse(jsonText);
+                if (!Array.isArray(importedData)) {
+                    throw new Error('Data must be an array');
+                }
+
+                currentData = importedData;
+                const month = document.getElementById('monthPicker').value;
+                renderTimetable(month, importedData);
+                closeImportModal();
+                showAlert(`Imported ${importedData.length} records successfully`, 'success');
+            } catch (error) {
+                showAlert(`Import error: ${error.message}`, 'error');
+            }
+        }
+
+        function exportToExcel() {
+            const month = document.getElementById('monthPicker').value;
+            const data = currentData;
+
+            if (data.length === 0) {
+                showAlert('No data to export', 'error');
+                return;
+            }
+
+            // Create CSV content
+            let csv = 'Date,Staff,Shift,Permission,Punishment\n';
+            data.forEach(record => {
+                csv += `${record.date},"${record.staff}",${record.shift || ''},${record.permission || ''},${record.punishment || ''}\n`;
+            });
+
+            // Download as CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `roster-${month}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Timetable exported as CSV', 'success');
+        }
+
+        // Load timetable on page load
+        window.addEventListener('load', () => {
+            showAlert('Old timetable has been deleted. New system is ready for use. Please login to continue.', 'info');
+        });
+    </script>
+</body>
+</html>

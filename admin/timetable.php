@@ -8,6 +8,10 @@ $user = $_SESSION['user'];
 $message = '';
 $error = '';
 
+// Include TCPDF for PDF generation
+require_once '../vendor/autoload.php';
+use TCPDF as TCPDF_CLASS;
+
 // CMDS Staff - 15 people with their rotation rules
 $staffList = [
     ['name' => 'Abeng', 'position' => 'IDE Accoucheur', 'col' => 3],
@@ -154,6 +158,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_timetable'])
             error_log('Timetable generation error: ' . $e->getMessage());
             $error = 'Could not generate timetable: ' . $e->getMessage();
         }
+    }
+}
+
+// Handle email sending
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
+    verifyCsrf();
+    
+    $month = (int)($_POST['month'] ?? date('m'));
+    $year = (int)($_POST['year'] ?? date('Y'));
+    
+    $staffEmails = [
+        'Abeng' => 'abeng@cmds.cm',
+        'Mayan' => 'mayan@cmds.cm',
+        'Nloga' => 'nloga@cmds.cm',
+        'Favour' => 'favour@cmds.cm',
+        'Wiltitz' => 'wiltitz@cmds.cm',
+        'Kadija' => 'kadija@cmds.cm',
+        'Nyanze' => 'nyanze@cmds.cm',
+        'Mvogo' => 'mvogo@cmds.cm',
+        'Nagayena' => 'nagayena@cmds.cm',
+        'Ndong' => 'ndong@cmds.cm',
+        'Zad' => 'zad@cmds.cm',
+        'Florinda' => 'florinda@cmds.cm',
+        'Cathrine' => 'cathrine@cmds.cm',
+        'Abanda' => 'abanda@cmds.cm',
+        'Saurel' => 'saurel@cmds.cm',
+    ];
+    
+    $emailList = implode(',', array_values($staffEmails));
+    
+    $subject = "Planning CMDS - " . date('F Y', mktime(0, 0, 0, $month, 1, $year));
+    $body = "Bonjour l'équipe CENTRE MEDICAL DONS DE SOINS,\n\n";
+    $body .= "Veuillez trouver ci-joint le planning de travail pour " . date('F Y', mktime(0, 0, 0, $month, 1, $year)) . ".\n\n";
+    $body .= "LÉGENDE DES CODES:\n";
+    $body .= "M = Matin (8h-14h) | A = Après-midi (14h-21h) | N = Nuit (21h-8h)\n";
+    $body .= "J = Journée (8h-22h) | G = Garde (21h-8h) | R = Repos | REPOS = Congé\n\n";
+    $body .= "IMPORTANT: Vérifiez vos shifts. En cas d'indisponibilité, contactez:\n";
+    $body .= "Dr ABENG: 681 629 527 | Dr TATA: 673 080 473\n\n";
+    $body .= "Cordialement,\nAdministration CMDS";
+    
+    $headers = "From: admin@cmdonsdesoins.com\r\nContent-Type: text/plain; charset=UTF-8";
+    
+    if (mail($emailList, $subject, $body, $headers)) {
+        $message = "Timetable email sent to " . count($staffEmails) . " staff members!";
+    } else {
+        $error = "Failed to send email. Check server mail configuration.";
     }
 }
 
