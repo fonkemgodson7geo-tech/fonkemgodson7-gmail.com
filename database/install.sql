@@ -486,3 +486,26 @@ CREATE TABLE shift_timetables (
     INDEX idx_shift_date_group (shift_date, worker_group),
     INDEX idx_user_group (user_id, worker_group)
 );
+
+-- Employee Evaluations
+CREATE TABLE employee_evaluations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    evaluation_date DATE NOT NULL,
+    evaluated_by INT NOT NULL,
+    assiduity_rating DECIMAL(2,1) CHECK (assiduity_rating >= 1 AND assiduity_rating <= 5),
+    punctuality_rating DECIMAL(2,1) CHECK (punctuality_rating >= 1 AND punctuality_rating <= 5),
+    productivity_rating DECIMAL(2,1) CHECK (productivity_rating >= 1 AND productivity_rating <= 5),
+    illness_days INT DEFAULT 0,
+    permission_days INT DEFAULT 0,
+    absence_days INT DEFAULT 0,
+    sanctions TEXT,
+    suspension BOOLEAN DEFAULT FALSE,
+    query_letter TEXT,
+    overall_rating DECIMAL(2,1),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES users(id),
+    FOREIGN KEY (evaluated_by) REFERENCES users(id),
+    UNIQUE KEY uniq_employee_date (employee_id, evaluation_date)
+);
