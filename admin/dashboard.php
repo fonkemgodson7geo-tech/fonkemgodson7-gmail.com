@@ -203,7 +203,7 @@ $user = $_SESSION['user'];
                     <a class="nav-link" href="manage_users.php">
                         <i class="bi bi-people"></i> Manage Users
                     </a>
-                    <a class="nav-link" href="employee_evaluation.php">
+                    <a class="nav-link" href="employee_evaluation_enhanced.php">
                         <i class="bi bi-clipboard-check"></i> Employee Evaluation
                     </a>
                     <a class="nav-link" href="timetable.php">
