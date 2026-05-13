@@ -1,9 +1,8 @@
 <?php
 require_once 'config/config.php';
+require_once 'includes/auth.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+$canPublish = hasDesignatedAdminAccess();
 
 function pageCsrfToken(): string {
     if (empty($_SESSION['public_csrf_token'])) {
@@ -77,7 +76,9 @@ try {
     ensurePublicCommunicationsTable($pdo);
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish'])) {
-        if (!verifyPageCsrf()) {
+        if (!$canPublish) {
+            $error = 'Only administrators may publish new public communications.';
+        } elseif (!verifyPageCsrf()) {
             $error = 'Request validation failed. Please refresh and try again.';
         } elseif ($authorName === '' || $title === '' || $body === '') {
             $error = 'Name, title, and message are required.';
@@ -570,13 +571,14 @@ $postCount = count($posts);
             <div class="sidebar-wrap">
                 <div class="card-glass publish-card" id="publish-form">
                     <h4><i class="bi bi-pencil-square"></i> Publish Communique</h4>
-                    <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(pageCsrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php if ($canPublish): ?>
+                        <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(pageCsrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
 
-                        <div class="col-12">
-                            <label class="form-label" for="author_name">Your Name</label>
-                            <input class="form-control" id="author_name" name="author_name" value="<?php echo htmlspecialchars($authorName, ENT_QUOTES, 'UTF-8'); ?>" required>
-                        </div>
+                            <div class="col-12">
+                                <label class="form-label" for="author_name">Your Name</label>
+                                <input class="form-control" id="author_name" name="author_name" value="<?php echo htmlspecialchars($authorName, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
 
                         <div class="col-12">
                             <label class="form-label" for="contact">Contact (email or phone)</label>
@@ -602,6 +604,11 @@ $postCount = count($posts);
                             <button class="btn btn-publish" type="submit" name="publish"><i class="bi bi-send"></i> Publish Update</button>
                         </div>
                     </form>
+                    <?php else: ?>
+                        <div class="alert alert-info" style="border-left-color: #0c8f77;">
+                            <strong>Publishing is restricted.</strong> Only administrators may upload or publish public communications.
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="card-glass info-card">

@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Duty Roster - Department Management</title>
+    <title id="pageTitle">Hospital Duty Roster - Department Management</title>
+    <script>
+        window.location.replace('admin/timetable.php');
+    </script>
     <style>
         * {
             margin: 0;
@@ -562,24 +565,24 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Hospital Duty Roster - Department Management</h1>
-            <p>Manage staff schedules by department</p>
+            <h1 id="headerTitle">Hospital Duty Roster - Department Management</h1>
+            <p id="headerSubtitle">Manage staff schedules by department</p>
         </div>
 
         <div class="content">
             <!-- Login Section -->
             <div id="loginBox" class="login-box">
-                <h2>Administrator Login</h2>
+                <h2 id="loginTitle">Administrator Login</h2>
                 <div class="form-group">
-                    <label for="username">Username:</label>
+                    <label for="username" id="usernameLabel">Username:</label>
                     <input type="text" id="username" placeholder="Enter username" value="admin">
                 </div>
                 <div class="form-group">
-                    <label for="password">Password:</label>
+                    <label for="password" id="passwordLabel">Password:</label>
                     <input type="password" id="password" placeholder="Enter password" value="1234">
                 </div>
-                <button onclick="login()">Login</button>
-                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                <button onclick="login()" id="loginBtn">Login</button>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #666;" id="demoText">
                     Demo: admin / 1234
                 </div>
             </div>
@@ -591,21 +594,32 @@
                 <div class="controls">
                     <div style="display: flex; gap: 10px; flex: 1; min-width: 250px; align-items: flex-end;">
                         <div style="flex: 1;">
-                            <label for="monthPicker" style="display: block; margin-bottom: 5px; font-weight: 600;">
+                            <label for="monthPicker" style="display: block; margin-bottom: 5px; font-weight: 600;"
+                                id="selectMonthLabel">
                                 Select Month:
                             </label>
                             <input type="month" id="monthPicker" value="2026-05">
                         </div>
+                        <div style="flex: 1;">
+                            <label for="languageSelect" style="display: block; margin-bottom: 5px; font-weight: 600;"
+                                id="selectLanguageLabel">
+                                Language:
+                            </label>
+                            <select id="languageSelect">
+                                <option value="en">English</option>
+                                <option value="fr">Français</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <button onclick="loadTimetable()">Load Timetable</button>
-                    <button onclick="autoGenerateTimetable()">Auto Generate</button>
-                    <button onclick="importFromJSON()">Import JSON</button>
-                    <button onclick="exportToExcel()">Export Excel</button>
-                    <button onclick="shareTimetable()">Share</button>
-                    <button onclick="window.print()">Print</button>
-                    <button class="secondary" onclick="logout()">Logout</button>
-                    <div style="width:100%; margin-top:10px; color:#444; font-size:0.95em;">
+                    <button onclick="loadTimetable()" id="loadTimetableBtn">Load Timetable</button>
+                    <button onclick="autoGenerateTimetable()" id="autoGenerateBtn">Auto Generate</button>
+                    <button onclick="importFromJSON()" id="importJsonBtn">Import JSON</button>
+                    <button onclick="exportToExcel()" id="exportExcelBtn">Export Excel</button>
+                    <button onclick="shareTimetable()" id="shareBtn">Share</button>
+                    <button onclick="window.print()" id="printBtn">Print</button>
+                    <button class="secondary" onclick="logout()" id="logoutBtn">Logout</button>
+                    <div style="width:100%; margin-top:10px; color:#444; font-size:0.95em;" id="instructionText">
                         Click a cell to assign a shift, permission, or punishment. Selected cells remain highlighted for
                         clarity, and Auto Generate preserves your assignments.
                     </div>
@@ -774,10 +788,10 @@
                 document.getElementById('app').style.display = 'block';
                 initializeAllWorkers();
                 createDepartmentTabs();
-                showAlert('Login successful! Ready to manage timetable.', 'success');
+                showAlert(translations[currentLang].loginSuccess, 'success');
                 loadTimetable();
             } else {
-                showAlert('Invalid username or password', 'error');
+                showAlert(translations[currentLang].invalidLogin, 'error');
             }
         }
 
@@ -786,7 +800,7 @@
             document.getElementById('app').style.display = 'none';
             document.getElementById('username').value = 'admin';
             document.getElementById('password').value = '1234';
-            showAlert('Logged out successfully', 'success');
+            showAlert(translations[currentLang].logoutSuccess, 'success');
         }
 
         function createDepartmentTabs() {
@@ -864,19 +878,19 @@
             const name = input.value.trim();
 
             if (!name) {
-                showAlert('Please enter a worker name', 'error');
+                showAlert(translations[currentLang].enterWorkerNameError, 'error');
                 return;
             }
 
             if (allWorkers[deptKey].includes(name)) {
-                showAlert(`${name} is already in this department`, 'error');
+                showAlert(translations[currentLang].workerExists.replace('{name}', name), 'error');
                 return;
             }
 
             allWorkers[deptKey].push(name);
             input.value = '';
             updateWorkerLists();
-            showAlert(`${name} added to ${departments[deptKey].name}`, 'success');
+            showAlert(translations[currentLang].workerAdded.replace('{name}', name).replace('{dept}', departments[deptKey].name), 'success');
 
             // Reload timetable
             const month = document.getElementById('monthPicker').value;
@@ -887,7 +901,7 @@
             if (confirm(`Remove ${workerName} from ${departments[deptKey].name}?`)) {
                 allWorkers[deptKey] = allWorkers[deptKey].filter(w => w !== workerName);
                 updateWorkerLists();
-                showAlert(`${workerName} removed from ${departments[deptKey].name}`, 'success');
+                showAlert(translations[currentLang].workerRemoved.replace('{worker}', workerName).replace('{dept}', departments[deptKey].name), 'success');
 
                 // Reload timetable
                 const month = document.getElementById('monthPicker').value;
@@ -1201,9 +1215,202 @@
             showAlert('Timetable exported as CSV', 'success');
         }
 
+        // Translations
+        const translations = {
+            en: {
+                pageTitle: "Hospital Duty Roster - Department Management",
+                headerTitle: "Hospital Duty Roster - Department Management",
+                headerSubtitle: "Manage staff schedules by department",
+                loginTitle: "Administrator Login",
+                usernameLabel: "Username:",
+                passwordLabel: "Password:",
+                loginBtn: "Login",
+                demoText: "Demo: admin / 1234",
+                selectMonthLabel: "Select Month:",
+                selectLanguageLabel: "Language:",
+                loadTimetableBtn: "Load Timetable",
+                autoGenerateBtn: "Auto Generate",
+                importJsonBtn: "Import JSON",
+                exportExcelBtn: "Export Excel",
+                shareBtn: "Share",
+                printBtn: "Print",
+                logoutBtn: "Logout",
+                instructionText: "Click a cell to assign a shift, permission, or punishment. Selected cells remain highlighted for clarity, and Auto Generate preserves your assignments.",
+                manageWorkers: "👥 Manage Workers - {dept}",
+                removeBtn: "Remove",
+                enterWorkerName: "Enter new worker name",
+                addWorkerBtn: "Add Worker",
+                staffHeader: "Staff",
+                autoGenerated: "Auto-generated timetable for {month}. {total} blank cells filled while preserving existing assignments.",
+                jsonCopied: "Timetable JSON copied to clipboard for sharing",
+                loginSuccess: "Login successful! Ready to manage timetable.",
+                invalidLogin: "Invalid username or password",
+                logoutSuccess: "Logged out successfully",
+                enterWorkerNameError: "Please enter a worker name",
+                workerExists: "{name} is already in this department",
+                workerAdded: "{name} added to {dept}",
+                workerRemoved: "{worker} removed from {dept}",
+                selectMonthError: "Please select a month",
+                timetableLoaded: "Timetable loaded for {month}",
+                cellUpdated: "Updated {worker} on {date} to {value}",
+                shareMonthError: "Please select a month before sharing",
+                jsonCopied: "Timetable JSON copied to clipboard for sharing",
+                importSuccess: "Imported data successfully for {month}",
+                importError: "Import error: {error}",
+                csvExported: "Timetable exported as CSV",
+                departments: {
+                    Lab: "Laboratory",
+                    Pharmacy: "Pharmacy",
+                    Doctors: "Doctors",
+                    Administration: "Administration",
+                    General: "General Staff"
+                },
+                shifts: {
+                    "": "",
+                    M: "M",
+                    A: "A",
+                    N: "N",
+                    R: "R",
+                    OFF: "OFF",
+                    SICK: "SICK",
+                    LATE: "LATE",
+                    ABSENT: "ABSENT"
+                }
+            },
+            fr: {
+                pageTitle: "Planning des Services Hospitaliers - Gestion par Département",
+                headerTitle: "Planning des Services Hospitaliers - Gestion par Département",
+                headerSubtitle: "Gérer les horaires du personnel par département",
+                loginTitle: "Connexion Administrateur",
+                usernameLabel: "Nom d'utilisateur:",
+                passwordLabel: "Mot de passe:",
+                loginBtn: "Se connecter",
+                demoText: "Démo: admin / 1234",
+                selectMonthLabel: "Sélectionner le Mois:",
+                selectLanguageLabel: "Langue:",
+                loadTimetableBtn: "Charger le Planning",
+                autoGenerateBtn: "Génération Automatique",
+                importJsonBtn: "Importer JSON",
+                exportExcelBtn: "Exporter Excel",
+                shareBtn: "Partager",
+                printBtn: "Imprimer",
+                logoutBtn: "Déconnexion",
+                instructionText: "Cliquez sur une cellule pour assigner un quart, une permission ou une punition. Les cellules sélectionnées restent mises en évidence pour plus de clarté, et la Génération Automatique préserve vos affectations.",
+                manageWorkers: "👥 Gérer les Travailleurs - {dept}",
+                removeBtn: "Supprimer",
+                enterWorkerName: "Entrez le nom du nouveau travailleur",
+                addWorkerBtn: "Ajouter un Travailleur",
+                staffHeader: "Personnel",
+                autoGenerated: "Planning généré automatiquement pour {month}. {total} cellules vides remplies tout en préservant les affectations existantes.",
+                jsonCopied: "JSON du planning copié dans le presse-papiers pour le partage",
+                loginSuccess: "Connexion réussie ! Prêt à gérer le planning.",
+                invalidLogin: "Nom d'utilisateur ou mot de passe invalide",
+                logoutSuccess: "Déconnexion réussie",
+                enterWorkerNameError: "Veuillez entrer un nom de travailleur",
+                workerExists: "{name} est déjà dans ce département",
+                workerAdded: "{name} ajouté à {dept}",
+                workerRemoved: "{worker} supprimé de {dept}",
+                selectMonthError: "Veuillez sélectionner un mois",
+                timetableLoaded: "Planning chargé pour {month}",
+                cellUpdated: "Mis à jour {worker} le {date} à {value}",
+                shareMonthError: "Veuillez sélectionner un mois avant de partager",
+                jsonCopied: "JSON du planning copié dans le presse-papiers pour le partage",
+                importSuccess: "Données importées avec succès pour {month}",
+                importError: "Erreur d'importation : {error}",
+                csvExported: "Planning exporté en CSV",
+                departments: {
+                    Lab: "Laboratoire",
+                    Pharmacy: "Pharmacie",
+                    Doctors: "Médecins",
+                    Administration: "Administration",
+                    General: "Personnel Général"
+                },
+                shifts: {
+                    "": "",
+                    M: "M",
+                    A: "A",
+                    N: "N",
+                    R: "R",
+                    OFF: "REPOS",
+                    SICK: "MALADIE",
+                    LATE: "RETARD",
+                    ABSENT: "ABSENT"
+                }
+            }
+        };
+
+        let currentLang = 'en';
+
+        function translatePage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            document.getElementById('pageTitle').textContent = t.pageTitle;
+            document.getElementById('headerTitle').textContent = t.headerTitle;
+            document.getElementById('headerSubtitle').textContent = t.headerSubtitle;
+            if (document.getElementById('loginTitle')) document.getElementById('loginTitle').textContent = t.loginTitle;
+            if (document.getElementById('usernameLabel')) document.getElementById('usernameLabel').textContent = t.usernameLabel;
+            if (document.getElementById('passwordLabel')) document.getElementById('passwordLabel').textContent = t.passwordLabel;
+            if (document.getElementById('loginBtn')) document.getElementById('loginBtn').textContent = t.loginBtn;
+            if (document.getElementById('demoText')) document.getElementById('demoText').textContent = t.demoText;
+            document.getElementById('selectMonthLabel').textContent = t.selectMonthLabel;
+            document.getElementById('selectLanguageLabel').textContent = t.selectLanguageLabel;
+            document.getElementById('loadTimetableBtn').textContent = t.loadTimetableBtn;
+            document.getElementById('autoGenerateBtn').textContent = t.autoGenerateBtn;
+            document.getElementById('importJsonBtn').textContent = t.importJsonBtn;
+            document.getElementById('exportExcelBtn').textContent = t.exportExcelBtn;
+            document.getElementById('shareBtn').textContent = t.shareBtn;
+            document.getElementById('printBtn').textContent = t.printBtn;
+            document.getElementById('logoutBtn').textContent = t.logoutBtn;
+            document.getElementById('instructionText').textContent = t.instructionText;
+
+            // Update department tabs
+            document.querySelectorAll('#departmentTabs button').forEach(btn => {
+                const deptKey = btn.dataset.dept;
+                if (t.departments[deptKey]) {
+                    btn.textContent = t.departments[deptKey];
+                }
+            });
+
+            // Update worker management sections
+            document.querySelectorAll('h3').forEach(h3 => {
+                if (h3.textContent.includes('Manage Workers') || h3.textContent.includes('Gérer les Travailleurs')) {
+                    const dept = h3.textContent.split(' - ')[1];
+                    h3.textContent = t.manageWorkers.replace('{dept}', dept);
+                }
+            });
+
+            // Update buttons in worker sections
+            document.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent === 'Remove' || btn.textContent === 'Supprimer') btn.textContent = t.removeBtn;
+                if (btn.textContent === 'Add Worker' || btn.textContent === 'Ajouter un Travailleur') btn.textContent = t.addWorkerBtn;
+            });
+
+            // Update placeholders
+            const workerInput = document.querySelector('input[placeholder]');
+            if (workerInput) workerInput.placeholder = t.enterWorkerName;
+
+            // Update table headers
+            document.querySelectorAll('th').forEach(th => {
+                if (th.textContent === 'Staff' || th.textContent === 'Personnel') th.textContent = t.staffHeader;
+            });
+
+            // Update shift options in selects (though they are hidden, for future)
+            document.querySelectorAll('select.shift-select option').forEach(opt => {
+                if (t.shifts[opt.value] !== undefined) {
+                    opt.textContent = t.shifts[opt.value];
+                }
+            });
+        }
+
+        // Event listener for language select
+        document.getElementById('languageSelect').addEventListener('change', (e) => {
+            translatePage(e.target.value);
+        });
+
         // Load on page load
         window.addEventListener('load', () => {
-            showAlert('Department-based roster system ready. Please login to continue.', 'info');
+            showAlert(translations[currentLang].systemReady, 'info');
         });
     </script>
 </body>

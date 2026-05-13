@@ -436,7 +436,7 @@ $shiftTextColors = [
     <div class="controls">
         <h5><i class="bi bi-gear"></i> Generate Timetable</h5>
         <form method="POST" class="row g-3 align-items-end">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
+            <?php echo csrfField(); ?>
             
             <div class="col-md-3">
                 <label for="department" class="form-label">Department</label>
@@ -479,7 +479,7 @@ $shiftTextColors = [
                 <button type="button" onclick="downloadPdf()" class="btn btn-danger" title="Export as PDF document">
                     <i class="bi bi-file-pdf"></i> Export PDF
                 </button>
-                <button type="button" onclick="distributeTimetable()" class="btn btn-success" title="Auto-distribute to all portals">
+                <button type="button" onclick="distributeTimetable(event)" class="btn btn-success" title="Auto-distribute to all portals">
                     <i class="bi bi-cloud-arrow-up"></i> Distribute to Portals
                 </button>
                 <button type="button" onclick="downloadCsv()" class="btn btn-outline-secondary">
@@ -570,32 +570,41 @@ $shiftTextColors = [
             window.location.href = url;
         }
         
-        function distributeTimetable() {
+        function distributeTimetable(event) {
             const month = document.getElementById('month').value;
             const year = document.getElementById('year').value;
             const department = document.getElementById('department').value;
-            
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
             if (!month || !year || !department) {
                 alert('Please select month, year, and department first');
                 return;
             }
             
             // Show loading indicator
-            const originalText = event.target.innerText;
-            event.target.disabled = true;
-            event.target.innerHTML = '<i class="bi bi-hourglass-split"></i> Distributing...';
+            const button = event.target;
+            const originalText = button.innerText;
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> Distributing...';
             
+            const body = new URLSearchParams({
+                month,
+                year,
+                department,
+                csrf_token: csrfToken
+            });
+
             fetch('../api/distribute-timetable.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: `month=${month}&year=${year}&department=${department}`
+                body: body.toString()
             })
             .then(response => response.json())
             .then(data => {
-                event.target.disabled = false;
-                event.target.innerHTML = originalText;
+                button.disabled = false;
+                button.innerHTML = originalText;
                 
                 if (data.success) {
                     alert(`✅ Timetable successfully distributed!\n\nDepartment: ${data.distribution.department}\nPeriod: ${data.distribution.period}\n\nNotifications sent to:\n✓ Doctor Portal\n✓ Staff Portal\n✓ Admin Portal\n✓ Intern Portal\n✓ Trainee Portal\n\n(Patient Portal excluded as per policy)`);
@@ -604,8 +613,8 @@ $shiftTextColors = [
                 }
             })
             .catch(error => {
-                event.target.disabled = false;
-                event.target.innerHTML = originalText;
+                button.disabled = false;
+                button.innerHTML = originalText;
                 alert('Distribution error: ' + error.message);
             });
         }

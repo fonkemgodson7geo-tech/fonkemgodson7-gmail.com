@@ -5,7 +5,9 @@
  */
 
 require_once '../config/config.php';
+require_once '../includes/auth.php';
 
+requireDesignatedAdmin();
 header('Content-Type: application/json');
 
 // Verify request
@@ -15,12 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Verify session/authentication
-if (!isset($_SESSION['user'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit;
-}
+verifyCsrf();
 
 try {
     $month = isset($_POST['month']) ? (int)$_POST['month'] : (int)date('m');
@@ -65,17 +62,15 @@ try {
         mkdir($uploadsDir, 0755, true);
     }
     
-    // Save timetable file
+    // Save timetable file and log the distribution atomically
+    $pdo->beginTransaction();
     $filename = $uploadsDir . '/' . $department . '_' . $currentMonth . '.json';
-    file_put_contents($filename, $payloadJson);
-    
-    // Log distribution event
-    $logMsg = "Timetable distributed: {$department} for {$currentMonth}";
-    error_log($logMsg);
-    
+    if (file_put_contents($filename, $payloadJson) === false) {
+        throw new RuntimeException('Failed to write timetable distribution file.');
+    }
+
     // Store in database - create timetable_distributions table if needed
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS timetable_distributions (
+    $pdo->exec("CREATE TABLE IF NOT EXISTS timetable_distributions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             department TEXT NOT NULL,
             month_year TEXT NOT NULL,
@@ -88,15 +83,16 @@ try {
             sent_to_intern INTEGER DEFAULT 0,
             sent_to_trainee INTEGER DEFAULT 0
         )");
-        
-        // Record distribution
-        $stmt = $pdo->prepare("INSERT INTO timetable_distributions 
+
+    $stmt = $pdo->prepare("INSERT INTO timetable_distributions 
             (department, month_year, distributed_by, pdf_generated, sent_to_doctor, sent_to_staff, sent_to_admin, sent_to_intern, sent_to_trainee) 
             VALUES (?, ?, ?, 1, 1, 1, 1, 1, 1)");
-        $stmt->execute([$department, $currentMonth, $_SESSION['user']['id'] ?? 0]);
-    } catch (Exception $e) {
-        error_log('Database error: ' . $e->getMessage());
-    }
+    $stmt->execute([$department, $currentMonth, $_SESSION['user']['id'] ?? 0]);
+    $pdo->commit();
+    
+    // Log distribution event
+    $logMsg = "Timetable distributed: {$department} for {$currentMonth}";
+    error_log($logMsg);
     
     // Portal distribution status
     $distributionStatus = [
@@ -121,6 +117,12 @@ try {
     ]);
     
 } catch (Exception $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    if (!empty($filename) && file_exists($filename)) {
+        @unlink($filename);
+    }
     http_response_code(500);
     echo json_encode([
         'success' => false,

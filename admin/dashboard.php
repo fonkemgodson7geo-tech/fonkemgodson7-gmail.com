@@ -265,7 +265,7 @@ try {
                     <a class="nav-link" href="timetable.php">
                         <i class="bi bi-calendar3"></i> Timetable
                     </a>
-                    <a class="nav-link" href="../timetable_manager.html">
+                    <a class="nav-link" href="timetable.php">
                         <i class="bi bi-layout-text-window-reverse"></i> Timetable Manager
                     </a>
                     <a class="nav-link" href="scheduler.php">
@@ -438,7 +438,7 @@ try {
                     <div class="stat-title">Timetable Manager</div>
                     <div class="stat-number">&ndash;</div>
                     <div class="stat-footer">
-                        <a href="../timetable_manager.html" class="action-link">Open Manager →</a>
+                        <a href="timetable.php" class="action-link">Open Manager →</a>
                     </div>
                 </div>
             </div>
