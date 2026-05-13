@@ -312,24 +312,98 @@ $shiftTextColors = [
     <style>
         body { background: #f5f7fa; }
         .timetable-container { max-width: 1400px; margin: 2rem auto; }
-        .timetable-header { background: linear-gradient(135deg, #0b2b3b 0%, #1a4a62 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+        .timetable-header { background: linear-gradient(135deg, #0b2b3b 0%, #1a4a62 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .timetable-header h1 { font-size: 2rem; font-weight: 600; }
         .timetable-header p { font-size: 0.95rem; opacity: 0.9; }
-        .controls { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .table-responsive { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+        .controls { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .controls h5 { color: #0b2b3b; margin-bottom: 1rem; }
+        .table-responsive { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: auto; }
         .timetable { margin: 0; }
-        .timetable thead { background: #0b2b3b; color: white; }
-        .timetable th { padding: 1rem; font-weight: 600; border: 1px solid #ddd; }
-        .timetable td { padding: 0.75rem; border: 1px solid #ddd; text-align: center; font-size: 0.9rem; }
-        .shift-cell { cursor: pointer; transition: all 0.2s; border-radius: 4px; font-weight: 500; }
-        .shift-cell:hover { transform: scale(1.05); }
-        .legend { margin-top: 2rem; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .legend-item { display: inline-block; margin-right: 2rem; margin-bottom: 0.5rem; }
-        .legend-color { display: inline-block; width: 20px; height: 20px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
-        .alert { border-radius: 12px; }
+        .timetable thead { background: linear-gradient(135deg, #0b2b3b 0%, #1a4a62 100%); color: white; }
+        .timetable th { 
+            padding: 1rem; 
+            font-weight: 600; 
+            border: 2px solid #0b2b3b; 
+            text-align: center;
+            background: #0b2b3b;
+            color: white;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .timetable td { 
+            padding: 0.75rem; 
+            border: 1px solid #ddd; 
+            text-align: center; 
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .timetable tbody tr:hover { background-color: #f0f8ff; }
+        .shift-cell { 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            border-radius: 4px; 
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .shift-cell:hover { 
+            transform: scale(1.08);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .legend { 
+            margin-top: 2rem; 
+            padding: 1.5rem; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #0b2b3b;
+        }
+        .legend h6 { color: #0b2b3b; margin-bottom: 1rem; font-weight: 600; }
+        .legend-item { 
+            display: inline-block; 
+            margin-right: 2.5rem; 
+            margin-bottom: 0.75rem;
+            background: #f9f9f9;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+        .legend-color { 
+            display: inline-block; 
+            width: 22px; 
+            height: 22px; 
+            border-radius: 4px; 
+            margin-right: 8px; 
+            vertical-align: middle;
+            border: 1px solid #999;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .alert { border-radius: 12px; border-left: 4px solid; }
+        .alert-success { border-left-color: #198754; }
+        .alert-danger { border-left-color: #dc3545; }
+        .btn { border-radius: 8px; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #0b2b3b 0%, #1a4a62 100%); border: none; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(11, 43, 59, 0.3); }
+        .btn-success { background: linear-gradient(135deg, #198754 0%, #20c997 100%); border: none; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); border: none; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); }
+        .department-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0b2b3b 0%, #1a4a62 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+        }
         @media print {
             .controls, .timetable-header { display: none; }
             .table-responsive { box-shadow: none; }
+            .legend { display: none; }
         }
     </style>
 </head>
@@ -338,7 +412,11 @@ $shiftTextColors = [
     <div class="timetable-header">
         <h1><i class="bi bi-calendar3"></i> Staff Timetable Management</h1>
         <p>CENTRE MEDICAL DONS DE SOINS - Auto-Rotation System V4.0</p>
-        <p style="opacity:0.8; margin-top: 0.5rem;">Department: <strong><?php echo htmlspecialchars($currentDepartmentLabel, ENT_QUOTES, 'UTF-8'); ?></strong></p>
+        <p style="opacity:0.8; margin-top: 0.5rem;">
+            Department: <span class="department-badge">
+                <i class="bi bi-people-fill"></i> <?php echo htmlspecialchars($currentDepartmentLabel, ENT_QUOTES, 'UTF-8'); ?>
+            </span>
+        </p>
     </div>
     
     <?php if ($error): ?>
@@ -391,12 +469,18 @@ $shiftTextColors = [
                 </select>
             </div>
             
-            <div class="col-md-5">
+            <div class="col-md-12">
                 <button type="submit" name="generate_timetable" class="btn btn-primary">
                     <i class="bi bi-lightning"></i> Generate Timetable
                 </button>
                 <button type="submit" name="send_email" class="btn btn-outline-info">
                     <i class="bi bi-share-fill"></i> Share by Email
+                </button>
+                <button type="button" onclick="downloadPdf()" class="btn btn-danger" title="Export as PDF document">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </button>
+                <button type="button" onclick="distributeTimetable()" class="btn btn-success" title="Auto-distribute to all portals">
+                    <i class="bi bi-cloud-arrow-up"></i> Distribute to Portals
                 </button>
                 <button type="button" onclick="downloadCsv()" class="btn btn-outline-secondary">
                     <i class="bi bi-download"></i> Export CSV
@@ -472,6 +556,60 @@ $shiftTextColors = [
 
 <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
+        function downloadPdf() {
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            const department = document.getElementById('department').value;
+            
+            if (!month || !year || !department) {
+                alert('Please select month, year, and department first');
+                return;
+            }
+            
+            const url = `../api/timetable-pdf.php?month=${month}&year=${year}&department=${department}`;
+            window.location.href = url;
+        }
+        
+        function distributeTimetable() {
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            const department = document.getElementById('department').value;
+            
+            if (!month || !year || !department) {
+                alert('Please select month, year, and department first');
+                return;
+            }
+            
+            // Show loading indicator
+            const originalText = event.target.innerText;
+            event.target.disabled = true;
+            event.target.innerHTML = '<i class="bi bi-hourglass-split"></i> Distributing...';
+            
+            fetch('../api/distribute-timetable.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `month=${month}&year=${year}&department=${department}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                event.target.disabled = false;
+                event.target.innerHTML = originalText;
+                
+                if (data.success) {
+                    alert(`✅ Timetable successfully distributed!\n\nDepartment: ${data.distribution.department}\nPeriod: ${data.distribution.period}\n\nNotifications sent to:\n✓ Doctor Portal\n✓ Staff Portal\n✓ Admin Portal\n✓ Intern Portal\n✓ Trainee Portal\n\n(Patient Portal excluded as per policy)`);
+                } else {
+                    alert('Error: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                event.target.disabled = false;
+                event.target.innerHTML = originalText;
+                alert('Distribution error: ' + error.message);
+            });
+        }
+        
         function downloadCsv() {
             const rows = [[
                 'Date', 'Day', <?php foreach ($staffList as $staff): ?>'<?php echo htmlspecialchars($staff['name'], ENT_QUOTES, 'UTF-8'); ?>', <?php endforeach; ?>'Notes'
