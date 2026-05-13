@@ -3,6 +3,7 @@
  * Complete System Test - Verify all pages and logins
  */
 require_once 'config/config.php';
+require_once 'includes/auth.php';
 
 echo "═════════════════════════════════════════════════════════════\n";
 echo "  COMPLETE SYSTEM VERIFICATION TEST\n";
@@ -16,12 +17,21 @@ $tests = [
     'warnings' => 0
 ];
 
+$pdo = null; // Initialize
+
 // Test 1: Database Connection
 echo "1. DATABASE CONNECTION TEST\n";
 echo "─────────────────────────────────────────────────────────────\n";
 try {
-    $pdo = getDB();
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    if (DB_TYPE === 'sqlite') {
+        $pdo = new PDO('sqlite:' . DB_FILE);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('PRAGMA foreign_keys = ON');
+    } else {
+        // MySQL connection (legacy)
+        $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
     $result = $pdo->query("SELECT 1");
     echo "   ✅ Database connected successfully\n";
     echo "   Type: " . DB_TYPE . "\n";
@@ -31,92 +41,108 @@ try {
     $tests['passed']++;
 } catch (Exception $e) {
     echo "   ❌ Database connection failed: " . $e->getMessage() . "\n";
+    $pdo = null;
     $tests['failed']++;
 }
 
 // Test 2: Users Table
 echo "\n2. USERS TABLE & ADMIN CHECK\n";
 echo "─────────────────────────────────────────────────────────────\n";
-try {
-    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users");
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $userCount = (int)($row['count'] ?? 0);
-    echo "   ✅ Users table exists\n";
-    echo "   Total users: $userCount\n";
-    $tests['passed']++;
-    
-    // Check admin user
-    $stmt = $pdo->prepare("SELECT id, username, first_name FROM users WHERE role = 'admin' LIMIT 1");
-    $stmt->execute();
-    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($admin) {
-        echo "   ✅ Admin user exists: " . $admin['username'] . "\n";
-    } else {
-        echo "   ⚠️  No admin user found\n";
-        $tests['warnings']++;
+if ($pdo === null) {
+    echo "   ⏭️  Skipped (database not available)\n";
+    $tests['warnings']++;
+} else {
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $userCount = (int)($row['count'] ?? 0);
+        echo "   ✅ Users table exists\n";
+        echo "   Total users: $userCount\n";
+        $tests['passed']++;
+        
+        // Check admin user
+        $stmt = $pdo->prepare("SELECT id, username, first_name FROM users WHERE role = 'admin' LIMIT 1");
+        $stmt->execute();
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($admin) {
+            echo "   ✅ Admin user exists: " . $admin['username'] . "\n";
+        } else {
+            echo "   ⚠️  No admin user found\n";
+            $tests['warnings']++;
+        }
+    } catch (Exception $e) {
+        echo "   ❌ Users table check failed: " . $e->getMessage() . "\n";
+        $tests['failed']++;
     }
-} catch (Exception $e) {
-    echo "   ❌ Users table check failed: " . $e->getMessage() . "\n";
-    $tests['failed']++;
 }
 
 // Test 3: Role-based Users
 echo "\n3. ROLE-BASED USERS CHECK\n";
 echo "─────────────────────────────────────────────────────────────\n";
-$roles = ['doctor', 'patient', 'staff', 'intern', 'trainee', 'pharmacist'];
-foreach ($roles as $role) {
-    try {
-        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE role = ?");
-        $stmt->execute([$role]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $count = (int)($row['count'] ?? 0);
-        $status = $count > 0 ? "✅" : "⚠️ ";
-        echo "   $status " . ucfirst($role) . "s: $count\n";
-        if ($count > 0) {
-            $tests['passed']++;
-        } else {
-            $tests['warnings']++;
+if ($pdo === null) {
+    echo "   ⏭️  Skipped (database not available)\n";
+    $tests['warnings']++;
+} else {
+    $roles = ['doctor', 'patient', 'staff', 'intern', 'trainee', 'pharmacist'];
+    foreach ($roles as $role) {
+        try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE role = ?");
+            $stmt->execute([$role]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $count = (int)($row['count'] ?? 0);
+            $status = $count > 0 ? "✅" : "⚠️ ";
+            echo "   $status " . ucfirst($role) . "s: $count\n";
+            if ($count > 0) {
+                $tests['passed']++;
+            } else {
+                $tests['warnings']++;
+            }
+        } catch (Exception $e) {
+            echo "   ❌ Error checking $role: " . $e->getMessage() . "\n";
+            $tests['failed']++;
         }
-    } catch (Exception $e) {
-        echo "   ❌ Error checking $role: " . $e->getMessage() . "\n";
-        $tests['failed']++;
     }
 }
 
 // Test 4: Core Tables
 echo "\n4. CORE TABLES CHECK\n";
 echo "─────────────────────────────────────────────────────────────\n";
-$tables = [
-    'users' => 'User accounts',
-    'patients' => 'Patient records',
-    'appointments' => 'Appointments',
-    'consultations' => 'Doctor consultations',
-    'doctors' => 'Doctor specializations',
-    'medical_records' => 'Medical records',
-    'shift_timetables' => 'Shift schedules',
-];
+if ($pdo === null) {
+    echo "   ⏭️  Skipped (database not available)\n";
+    $tests['warnings']++;
+} else {
+    $tables = [
+        'users' => 'User accounts',
+        'patients' => 'Patient records',
+        'appointments' => 'Appointments',
+        'consultations' => 'Doctor consultations',
+        'doctors' => 'Doctor specializations',
+        'medical_records' => 'Medical records',
+        'shift_timetables' => 'Shift schedules',
+    ];
 
-foreach ($tables as $table => $description) {
-    try {
-        if (DB_TYPE === 'sqlite') {
-            $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
-        } else {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?");
+    foreach ($tables as $table => $description) {
+        try {
+            if (DB_TYPE === 'sqlite') {
+                $stmt = $pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+            } else {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?");
+            }
+            $stmt->execute(DB_TYPE === 'sqlite' ? [$table] : [DB_NAME, $table]);
+            $tableExists = (bool)$stmt->fetchColumn();
+            
+            if ($tableExists) {
+                echo "   ✅ $table ($description)\n";
+                $tests['passed']++;
+            } else {
+                echo "   ❌ $table MISSING\n";
+                $tests['failed']++;
+            }
+        } catch (Exception $e) {
+            echo "   ⚠️  $table - Unable to check\n";
+            $tests['warnings']++;
         }
-        $stmt->execute(DB_TYPE === 'sqlite' ? [$table] : [DB_NAME, $table]);
-        $tableExists = (bool)$stmt->fetchColumn();
-        
-        if ($tableExists) {
-            echo "   ✅ $table ($description)\n";
-            $tests['passed']++;
-        } else {
-            echo "   ❌ $table MISSING\n";
-            $tests['failed']++;
-        }
-    } catch (Exception $e) {
-        echo "   ⚠️  $table - Unable to check\n";
-        $tests['warnings']++;
     }
 }
 
